@@ -1,0 +1,9 @@
+# 强制所有文本文件存储为 LF
+* text=auto eol=lf
+
+# Windows 脚本允许 CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Linux 脚本必须 LF
+*.sh text eol=lf
