@@ -78,7 +78,7 @@ rospy.Subscriber("/mavros/local_position/odom",Odometry,odom_cb,queue_size=1)
 
 path='/home/amov/odom'
 os.makedirs(path,exist_ok=True)
-with open(os.path.join(path,f"{time.time}.txt"),'w') as f:
+with open(os.path.join(path,f"{time.time()}.txt"),'w') as f:
     while True:
         f.write(str(time.localtime())+'\n')
         f.write("   global: "+f"{local_x} {local_y} {local_z} {local_vel_x} {local_vel_y} {local_vel_z} {local_yaw}\n")

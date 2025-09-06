@@ -622,7 +622,7 @@ def main():
                                                             yaw=trusted_dataList[k].get_yaw(), cropTensorList=trusted_dataList[k].get_cropTensorList(),
                                                             speed=trusted_dataList[k].get_speed())
                             # with open(os.path.join(path,f'{common_trusted_num_list[rank]}.txt'), 'a') as file1:
-                            files[common_trusted_num_list[rank]].write(str(cur_pos[0]) + " " + str(cur_pos[1]) +' '+ str(trusted_dataList[k].filename)+' '+str(trusted_dataList[k].get_pos()[0])+' '+str(trusted_dataList[k].get_pos()[1])+' '+str(trusted_dataList[k].get_pos()[2])+' '+trusted_dataList[k].yaw+' '+trusted_dataList[k].cropTensorList+"\n")
+                            files[common_trusted_num_list[rank]].write(str(cur_pos[0]) + " " + str(cur_pos[1]) +' '+ str(trusted_dataList[k].filename)+' '+str(trusted_dataList[k].get_pos()[0])+' '+str(trusted_dataList[k].get_pos()[1])+' '+str(trusted_dataList[k].get_pos()[2])+' '+str(trusted_dataList[k].yaw)+' '+str(trusted_dataList[k].cropTensorList)+"\n")
                             zero_poses[rank] += cur_pos
                             middles[rank] += 1
                             savedflag=True
@@ -633,7 +633,7 @@ def main():
                                 yaw=trusted_dataList[k].get_yaw(), cropTensorList=trusted_dataList[k].get_cropTensorList(),
                                 speed=trusted_dataList[k].get_speed())
                             # with open(os.path.join(path,f'{common_trusted_num_list[rank]}.txt'), 'a') as file1:
-                            f.write(str(cur_pos[0]) + " " + str(cur_pos[1]) + ' '+str(trusted_dataList[k].filename)+' '+str(trusted_dataList[k].get_pos()[0])+' '+str(trusted_dataList[k].get_pos()[1])+' '+str(trusted_dataList[k].get_pos()[2])+' '+trusted_dataList[k].yaw+' '+trusted_dataList[k].cropTensorList+"\n")
+                            f.write(str(cur_pos[0]) + " " + str(cur_pos[1]) + ' '+str(trusted_dataList[k].filename)+' '+str(trusted_dataList[k].get_pos()[0])+' '+str(trusted_dataList[k].get_pos()[1])+' '+str(trusted_dataList[k].get_pos()[2])+' '+str(trusted_dataList[k].yaw)+' '+str(trusted_dataList[k].cropTensorList)+"\n")
 
                 final_poses=[np.zeros(3),np.zeros(3),np.zeros(3)]
                 for i in range(length):
@@ -683,7 +683,7 @@ def main():
                                                             yaw=dataList[k].get_yaw(), cropTensorList=dataList[k].get_cropTensorList(),
                                                             speed=dataList[k].get_speed())
                             # with open(os.path.join(path,f'{num_list_noconf[rank][0]}.txt'), 'a') as file1:
-                            files[num_list_only_num[rank]].write(str(cur_pos[0]) + " " + str(cur_pos[1]) + ' '+str(dataList[k].filename)+' '+str(dataList[k].get_pos()[0])+' '+str(dataList[k].get_pos()[1])+' '+str(dataList[k].get_pos()[2])+' '+dataList[k].yaw+' '+dataList[k].cropTensorList+"\n")
+                            files[num_list_only_num[rank]].write(str(cur_pos[0]) + " " + str(cur_pos[1]) + ' '+str(dataList[k].filename)+' '+str(dataList[k].get_pos()[0])+' '+str(dataList[k].get_pos()[1])+' '+str(dataList[k].get_pos()[2])+' '+str(dataList[k].yaw)+' '+str(dataList[k].cropTensorList)+"\n")
                             zero_poses[rank] += cur_pos
                             middles[rank] += 1
                             savedflag=True
@@ -694,7 +694,7 @@ def main():
                                 yaw=dataList[k].get_yaw(), cropTensorList=dataList[k].get_cropTensorList(),
                                 speed=dataList[k].get_speed())
                             # with open(os.path.join(path,f'{common_trusted_num_list[rank]}.txt'), 'a') as file1:
-                            f.write(str(cur_pos[0]) + " " + str(cur_pos[1]) + ' '+str(dataList[k].filename)+' '+str(dataList[k].get_pos()[0])+' '+str(dataList[k].get_pos()[1])+' '+str(dataList[k].get_pos()[2])+' '+dataList[k].yaw+' '+dataList[k].cropTensorList+"\n")
+                            f.write(str(cur_pos[0]) + " " + str(cur_pos[1]) + ' '+str(dataList[k].filename)+' '+str(dataList[k].get_pos()[0])+' '+str(dataList[k].get_pos()[1])+' '+str(dataList[k].get_pos()[2])+' '+str(dataList[k].yaw)+' '+str(dataList[k].cropTensorList)+"\n")
                 
                 final_poses=[np.zeros(3),np.zeros(3),np.zeros(3)]
                 for i in range(length):
