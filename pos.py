@@ -1,5 +1,5 @@
 class Imgdata(object):
-    def __init__(self, pos,num, yaw,cropTensorList,speed):  # pos是飞机三维坐标，coordinate是天井在照片的二维坐标
+    def __init__(self, pos,num, yaw,cropTensorList,speed,filename=''):  # pos是飞机三维坐标，coordinate是天井在照片的二维坐标
         # self.image = image  # 图像
         self.pos = pos  # x, y, z
         # self.coordinate = coordinate  # 二维坐标
@@ -8,6 +8,7 @@ class Imgdata(object):
         self.yaw = yaw
         self.cropTensorList = cropTensorList
         self.speed = speed
+        self.filename=filename
 
     @staticmethod
     def make_struct(image, pos, coordinate, num, time, yaw,cropTensorList):

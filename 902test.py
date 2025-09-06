@@ -355,25 +355,41 @@ def main():
     frameid=0
     framestart=0
     cameraAdjust()
+    id=0
+    while id<=30:
+        cap = cv2.VideoCapture(id)
+        if not cap.isOpened():
+            id+=1
+        else:
+            # if(cameraType!='siyi'):
+            #     subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", "exposure_auto=1"])
+            #     subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", f"exposure_absolute={expo}"])
+            break
+    cap.set(cv2.CAP_PROP_FOURCC,cv2.VideoWriter_fourcc(*'MJPG'))
+    cap.set(cv2.CAP_PROP_FPS, 30)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, fw)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, fh)
+    cap.set(cv2.CAP_PROP_BUFFERSIZE, 8)
+
     while True:
         if wp==c1start or wp==c2start:
-            id=0
-            while id<=30:
-                cap = cv2.VideoCapture(id)
-                if not cap.isOpened():
-                    id+=1
-                else:
-#                     subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", "exposure_auto=1"])
+#             id=0
+#             while id<=30:
+#                 cap = cv2.VideoCapture(id)
+#                 if not cap.isOpened():
+#                     id+=1
+#                 else:
+# #                     subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", "exposure_auto=1"])
 
-# # # 设置曝光值为90谢谢
-#                     subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", f"exposure_absolute={expo}"])
-                    break
-            cap.set(cv2.CAP_PROP_FOURCC,cv2.VideoWriter_fourcc(*'MJPG'))
-            cap.set(cv2.CAP_PROP_FPS, 30)
-            cap.set(cv2.CAP_PROP_FRAME_WIDTH, fw)
-            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, fh)
-            cap.set(cv2.CAP_PROP_BUFFERSIZE, 8)
-
+# # # # 设置曝光值为90谢谢
+# #                     subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", f"exposure_absolute={expo}"])
+#                     break
+#             cap.set(cv2.CAP_PROP_FOURCC,cv2.VideoWriter_fourcc(*'MJPG'))
+#             cap.set(cv2.CAP_PROP_FPS, 30)
+#             cap.set(cv2.CAP_PROP_FRAME_WIDTH, fw)
+#             cap.set(cv2.CAP_PROP_FRAME_HEIGHT, fh)
+#             cap.set(cv2.CAP_PROP_BUFFERSIZE, 8)
+            cameraAdjust()
             # frameWidth = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
             # frameHeight = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
             # frameFps = cap.get(cv2.CAP_PROP_FPS)  # 帧率
@@ -513,7 +529,7 @@ def main():
                     alldata=alldataList[mapofclear[int(name.split('/')[-1].split('.')[0].split('_')[0])]]
                     imgdata = pos.Imgdata(pos=alldata.pos,num=num,
                                         yaw=alldata.yaw,cropTensorList=cls_sources[int(name.split('/')[-1].split('.')[0].split('_')[1])][int(name.split('/')[-1].split('.')[0].split('_')[-1])],
-                                        speed=alldata.speed)
+                                        speed=alldata.speed,filename=name)
                     prob=min(prob1,prob2)
                     num_and_prob=(num,prob)
                     num_list.append(num_and_prob)
@@ -569,7 +585,7 @@ def main():
                     alldata=alldataList[mapofclear[int(name.split('/')[-1].split('.')[0].split('_')[0])]]
                     imgdata = pos.Imgdata(pos=alldata.pos,num=num,
                                         yaw=alldata.yaw,cropTensorList=cls_sources[int(name.split('/')[-1].split('.')[0].split('_')[1])][int(name.split('/')[-1].split('.')[0].split('_')[-1])],
-                                        speed=alldata.speed)
+                                        speed=alldata.speed,filename=name)
                     num_and_prob=(num,result.probs.top1conf)
                     num_list.append(num_and_prob)
                     dataList.append(imgdata)
@@ -603,7 +619,7 @@ def main():
                                                             yaw=trusted_dataList[k].get_yaw(), cropTensorList=trusted_dataList[k].get_cropTensorList(),
                                                             speed=trusted_dataList[k].get_speed())
                             # with open(os.path.join(path,f'{common_trusted_num_list[rank]}.txt'), 'a') as file1:
-                            files[common_trusted_num_list[rank]].write(str(cur_pos[0]) + " " + str(cur_pos[1]) + "\n")
+                            files[common_trusted_num_list[rank]].write(str(cur_pos[0]) + " " + str(cur_pos[1]) + str(trusted_dataList[k].filename)+"\n")
                             zero_poses[rank] += cur_pos
                             middles[rank] += 1
                             break
@@ -654,7 +670,7 @@ def main():
                                                             yaw=dataList[k].get_yaw(), cropTensorList=dataList[k].get_cropTensorList(),
                                                             speed=dataList[k].get_speed())
                             # with open(os.path.join(path,f'{num_list_noconf[rank][0]}.txt'), 'a') as file1:
-                            files[num_list_only_num[rank]].write(str(cur_pos[0]) + " " + str(cur_pos[1]) + "\n")
+                            files[num_list_only_num[rank]].write(str(cur_pos[0]) + " " + str(cur_pos[1]) +str(dataList[k].filename)+"\n")
                             zero_poses[rank] += cur_pos
                             middles[rank] += 1
                             break
