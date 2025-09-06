@@ -255,8 +255,8 @@ def main():
     def coordinate_change(rank,height=25, pos_=[0, 0, 25], yaw=0.00000000, cropTensorList=[[0, 0], [0, 0], [0, 0], [0, 0]],
                         speed=[0, 0, 0], ):
         
-        well_width = (cropTensorList[0][0] + cropTensorList[2][0]) // 2
-        well_height = (cropTensorList[0][1] + cropTensorList[2][1]) // 2
+        well_width = (cropTensorList[0][0] + cropTensorList[2][0]) / 2
+        well_height = (cropTensorList[0][1] + cropTensorList[2][1]) / 2
 
         # 通过ros获取飞行的高度以及X与Y的值  此处默认设置为20
         X0 = pos_[0]
@@ -266,8 +266,8 @@ def main():
         x = ((well_width - nmtx[0][2]) / nmtx[0][0]) * Z0
         y = ((nmtx[1][2] - well_height) / nmtx[1][1]) * Z0
 
-        x_ = x * np.cos(yaw) - y * np.sin(yaw)
-        y_ = y * np.cos(yaw) + x * np.sin(yaw)
+        x_ = x * np.sin(yaw) + y * np.cos(yaw)
+        y_ = y * np.sin(yaw) - x * np.cos(yaw)
         # current_speed = math.pow(speed[0] * speed[0] + speed[1] * speed[1], 0.5)
         # delt = current_speed * 1.15#12.5# current_speed * 1.08288
 
@@ -423,16 +423,18 @@ def main():
                             break
                         # out.write(frame)
                         cv2.imwrite(os.path.join(outpath,f'{frameid}.jpg'),frame)
-                        frameid+=1
+                        
                         allimgdata = pos.Imgdata(pos=[local_x, local_y, local_z],  num=-1, 
                                                 yaw=local_yaw, cropTensorList=[(0,0),(0,0),(0,0),(0,0)],
                                                 speed=[local_vel_x, local_vel_y, local_vel_z],)
                         alldataList.append(allimgdata)
+                        #todo 所有坐标结果记录下来，同时记录图片对应的pos和
                         with open(os.path.join(path,"odom.txt"),'a') as file:
-                            file.write("global: "+str(local_x)+' '+str(local_y)+' '+str(local_z)+' '+str(local_vel_x)+' '+str(local_vel_y)+' '+str(local_vel_z)+' '+str(local_yaw)+'\n')
-                            file.write("local: "+str(odom_x)+' '+str(odom_y)+' '+str(odom_z)+' '+str(odom_vel_x)+' '+str(odom_vel_y)+' '+str(odom_vel_z)+' '+str(odom_yaw)+'\n')
+                            file.write(f"{frameid} global: "+str(local_x)+' '+str(local_y)+' '+str(local_z)+' '+str(local_vel_x)+' '+str(local_vel_y)+' '+str(local_vel_z)+' '+str(local_yaw)+'\n')
+                            # file.write("local: "+str(odom_x)+' '+str(odom_y)+' '+str(odom_z)+' '+str(odom_vel_x)+' '+str(odom_vel_y)+' '+str(odom_vel_z)+' '+str(odom_yaw)+'\n')
                         # if cv2.waitKey(1) & 0xFF == ord('q'):
                         #     break
+                        frameid+=1
                     else:
                         break
                 # rate.sleep()
@@ -612,6 +614,7 @@ def main():
                        common_trusted_num_list[1]:open(os.path.join(path,f'{common_trusted_num_list[1]}.txt'), 'a'),
                        common_trusted_num_list[2]:open(os.path.join(path,f'{common_trusted_num_list[2]}.txt'), 'a')}
                 for k in range(object_sum):  # 识别到数字的有效
+                    savedflag=False
                     for rank in range(length):
                         if common_trusted_num_list[rank] == trusted_dataList[k].get_num():
                             # print(num_list[0])
@@ -619,10 +622,19 @@ def main():
                                                             yaw=trusted_dataList[k].get_yaw(), cropTensorList=trusted_dataList[k].get_cropTensorList(),
                                                             speed=trusted_dataList[k].get_speed())
                             # with open(os.path.join(path,f'{common_trusted_num_list[rank]}.txt'), 'a') as file1:
-                            files[common_trusted_num_list[rank]].write(str(cur_pos[0]) + " " + str(cur_pos[1]) + str(trusted_dataList[k].filename)+"\n")
+                            files[common_trusted_num_list[rank]].write(str(cur_pos[0]) + " " + str(cur_pos[1]) +' '+ str(trusted_dataList[k].filename)+' '+str(trusted_dataList[k].get_pos()[0])+' '+str(trusted_dataList[k].get_pos()[1])+' '+str(trusted_dataList[k].get_pos()[2])+' '+trusted_dataList[k].yaw+' '+trusted_dataList[k].cropTensorList+"\n")
                             zero_poses[rank] += cur_pos
                             middles[rank] += 1
+                            savedflag=True
                             break
+                    if savedflag==False:
+                        with open(os.path.join(path,f'others.txt'), 'a') as f:
+                            cur_pos = coordinate_change(rank,height=25, pos_=[trusted_dataList[k].get_pos()[0], trusted_dataList[k].get_pos()[1], trusted_dataList[k].get_pos()[2]],
+                                yaw=trusted_dataList[k].get_yaw(), cropTensorList=trusted_dataList[k].get_cropTensorList(),
+                                speed=trusted_dataList[k].get_speed())
+                            # with open(os.path.join(path,f'{common_trusted_num_list[rank]}.txt'), 'a') as file1:
+                            f.write(str(cur_pos[0]) + " " + str(cur_pos[1]) + ' '+str(trusted_dataList[k].filename)+' '+str(trusted_dataList[k].get_pos()[0])+' '+str(trusted_dataList[k].get_pos()[1])+' '+str(trusted_dataList[k].get_pos()[2])+' '+trusted_dataList[k].yaw+' '+trusted_dataList[k].cropTensorList+"\n")
+
                 final_poses=[np.zeros(3),np.zeros(3),np.zeros(3)]
                 for i in range(length):
                     final_poses[i]=[zero_poses[i][0] / middles[i], zero_poses[i][1] / middles[i], zero_poses[i][2] / middles[i]]
@@ -663,6 +675,7 @@ def main():
                 for i in range(length):
                     files[num_list_only_num[i]]=open(os.path.join(path,f'{num_list_only_num[i]}.txt'), 'a')
                 for k in range(object_sum):  # 识别到数字的有效
+                    savedflag=False
                     for rank in range(length):
                         if num_list_only_num[rank] == dataList[k].get_num():
                             # print(num_list[0])
@@ -670,10 +683,19 @@ def main():
                                                             yaw=dataList[k].get_yaw(), cropTensorList=dataList[k].get_cropTensorList(),
                                                             speed=dataList[k].get_speed())
                             # with open(os.path.join(path,f'{num_list_noconf[rank][0]}.txt'), 'a') as file1:
-                            files[num_list_only_num[rank]].write(str(cur_pos[0]) + " " + str(cur_pos[1]) +str(dataList[k].filename)+"\n")
+                            files[num_list_only_num[rank]].write(str(cur_pos[0]) + " " + str(cur_pos[1]) + ' '+str(dataList[k].filename)+' '+str(dataList[k].get_pos()[0])+' '+str(dataList[k].get_pos()[1])+' '+str(dataList[k].get_pos()[2])+' '+dataList[k].yaw+' '+dataList[k].cropTensorList+"\n")
                             zero_poses[rank] += cur_pos
                             middles[rank] += 1
+                            savedflag=True
                             break
+                    if savedflag==False:
+                        with open(os.path.join(path,f'others.txt'), 'a') as f:
+                            cur_pos = coordinate_change(rank,height=25, pos_=[dataList[k].get_pos()[0], dataList[k].get_pos()[1], dataList[k].get_pos()[2]],
+                                yaw=dataList[k].get_yaw(), cropTensorList=dataList[k].get_cropTensorList(),
+                                speed=dataList[k].get_speed())
+                            # with open(os.path.join(path,f'{common_trusted_num_list[rank]}.txt'), 'a') as file1:
+                            f.write(str(cur_pos[0]) + " " + str(cur_pos[1]) + ' '+str(dataList[k].filename)+' '+str(dataList[k].get_pos()[0])+' '+str(dataList[k].get_pos()[1])+' '+str(dataList[k].get_pos()[2])+' '+dataList[k].yaw+' '+dataList[k].cropTensorList+"\n")
+                
                 final_poses=[np.zeros(3),np.zeros(3),np.zeros(3)]
                 for i in range(length):
                     final_poses[i]=[zero_poses[i][0] / middles[i], zero_poses[i][1] / middles[i], zero_poses[i][2] / middles[i]]
