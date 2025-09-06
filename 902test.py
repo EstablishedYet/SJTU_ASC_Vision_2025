@@ -14,6 +14,7 @@ from std_msgs.msg import String
 from mavros_msgs.msg import WaypointReached
 from sensor_msgs.msg import NavSatStatus
 from geometry_msgs.msg import Point
+from package__.msg import picnameAndTime
 import tf
 import datetime
 import os
@@ -114,6 +115,7 @@ def main():
     parser.add_argument('--numOfFrame',type=int,default=18)
     parser.add_argument('--numOfCircle',type=int,default=2)
     parser.add_argument('--numOfProcs',type=int,default=8)
+    parser.add_argument('--camera',type=str)
     arg=parser.parse_args()
     
     mode=arg.mode
@@ -126,6 +128,7 @@ def main():
     numOfFrame=arg.numOfFrame
     numOfProcs=arg.numOfProcs
     numOfCircle=arg.numOfCircle
+    cameraType=arg.camera
     if numOfCircle==1:
         c2end=c2start=-1
 
@@ -162,10 +165,20 @@ def main():
     fw=1920
     fh=1080
     expo=1
-    mtx = np.array([[1075.5,0.00000000e+00,997.3],
+    mtx_siyi = np.array([[1075.5,0.00000000e+00,997.3],
                 [0.00000000e+00,1079.4,566],
                 [0.00000000e+00,0.00000000e+00,1.00000000e+00]],dtype=np.float64)
-    dist = np.array([[-0.077,0.0624,0,0,0]])
+    dist_siyi = np.array([[-0.077,0.0624,0,0,0]])
+    mtx_self1=np.array([[2820.3,0.00000000e+00,1267],
+                [0.00000000e+00,2837.5,612],
+                [0.00000000e+00,0.00000000e+00,1.00000000e+00]],dtype=np.float64)
+    dist_self1=np.array([[-0.52,0.7131,-0.0064,-0.00123,-1.333]])
+    if cameraType=='siyi':
+        mtx=mtx_siyi
+        dist=dist_siyi
+    elif cameraType=='self1':
+        mtx=mtx_self1
+        dist=dist_self1
     nmtx, _ = cv2.getOptimalNewCameraMatrix(mtx, dist, (fw,fh), alpha=1)
 
     if mode=="number":
@@ -357,6 +370,7 @@ def main():
     cameraAdjust()
     while True:
         if wp==c1start or wp==c2start:
+            
             id=0
             while id<=30:
                 cap = cv2.VideoCapture(id)
