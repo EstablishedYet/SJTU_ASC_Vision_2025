@@ -161,7 +161,7 @@ def main():
 
     fw=2560
     fh=1440
-    expo=1
+    expo=10
     mtx = np.array([[2.79879891e+03,0.00000000e+00,1.21998427e+03],
     [0.00000000e+00,2.80829486e+03,5.92931523e+02],
     [0.00000000e+00,0.00000000e+00,1.00000000e+00]])
@@ -363,8 +363,8 @@ def main():
             id+=1
         else:
             # if(cameraType!='siyi'):
-            #     subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", "exposure_auto=1"])
-            #     subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", f"exposure_absolute={expo}"])
+            subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", "exposure_auto=1"])
+            subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", f"exposure_absolute={expo}"])
             break
     cap.set(cv2.CAP_PROP_FOURCC,cv2.VideoWriter_fourcc(*'MJPG'))
     cap.set(cv2.CAP_PROP_FPS, 30)
