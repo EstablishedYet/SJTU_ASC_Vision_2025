@@ -163,6 +163,7 @@ def main():
     odom_yaw=0
 
     referenceMode=-1
+    permission=-1
 
     maxdet = 3
     max_num = 3
@@ -275,8 +276,8 @@ def main():
     def coordinate_change(rank,height=25, pos_=[0, 0, 25], yaw=0.00000000, cropTensorList=[[0, 0], [0, 0], [0, 0], [0, 0]],
                         speed=[0, 0, 0], ):
         
-        well_width = (cropTensorList[0][0] + cropTensorList[2][0]) // 2
-        well_height = (cropTensorList[0][1] + cropTensorList[2][1]) // 2
+        well_width = (cropTensorList[0][0] + cropTensorList[2][0]) / 2
+        well_height = (cropTensorList[0][1] + cropTensorList[2][1]) / 2
 
         # 通过ros获取飞行的高度以及X与Y的值  此处默认设置为20
         X0 = pos_[0]
@@ -286,8 +287,8 @@ def main():
         x = ((well_width - nmtx[0][2]) / nmtx[0][0]) * Z0
         y = ((nmtx[1][2] - well_height) / nmtx[1][1]) * Z0
 
-        x_ = x * np.cos(yaw) - y * np.sin(yaw)
-        y_ = y * np.cos(yaw) + x * np.sin(yaw)
+        x_ = x * np.sin(yaw) + y * np.cos(yaw)
+        y_ = y * np.sin(yaw) - x * np.cos(yaw)
         # current_speed = math.pow(speed[0] * speed[0] + speed[1] * speed[1], 0.5)
         # delt = current_speed * 1.15#12.5# current_speed * 1.08288
 
@@ -365,13 +366,18 @@ def main():
 
     def referenceMode_sub_func(msg):
         nonlocal referenceMode
-        referenceMode=msg
+        referenceMode=msg.data
+
+    def permission_sub_func(msg):
+        nonlocal permission
+        permission=msg.data
 
     rospy.init_node("vision_node")
     rate = rospy.Rate(30)
     result_pub = rospy.Publisher("final_result", String, queue_size = 1,latch=True)
     target_pub = rospy.Publisher("final_pos",PoseStamped, queue_size = 1,latch=True)
-    permission_pub=rospy.Publisher("permission",Float64,queue_size=1)
+    # permission_pub=rospy.Publisher("permission",Float64,queue_size=1)
+    traditionalTarget_pub=rospy.Publisher("traditionalTarget",PoseStamped,queue_size=1)
 
     pic_pub=rospy.Publisher("pic",picnameAndTime,queue_size=1) # /// reconsider the size of queue!!!
     firstLoopEnd_pub=rospy.Publisher("firstLoopEnd",Int32,queue_size=1)
@@ -380,6 +386,7 @@ def main():
     slamTarget_pub=rospy.Publisher("slamTarget",Point,queue_size=1)
 
     rospy.Subscriber("referenceMode",Int32,referenceMode_sub_func,queue_size=1)
+    rospy.Subscriber("permission",Int32,permission_sub_func,queue_size=1)
 
     rospy.Subscriber("/mavros/mission/reached",WaypointReached, wp_reach_cb, queue_size = 1)
     rospy.Subscriber("/mavros/global_position/local", Odometry, loc_pose_callback, queue_size=1)
@@ -455,8 +462,8 @@ def main():
                     curPicnameAndTime=picnameAndTime()
                     curPicnameAndTime.name=filepath
                     curPicnameAndTime.time=curTime_ns
-                    curPicnameAndTime.h=0
-                    curPicnameAndTime.biasAngle=0
+                    # curPicnameAndTime.h=0
+                    # curPicnameAndTime.biasAngle=0
                     pic_pub.publish(curPicnameAndTime)
                         # lastTime_ns=curTime_ns
 
@@ -747,25 +754,32 @@ def main():
             print(time.time()-t0)
             if circle_number==1:
                 if commonCheckedFlag or (circle_failed[0]==0 and average_conf>=conf_thresh):
-                    target_pub.publish(final_pos__)
-                    permission_pub.publish(1)
+                    # target_pub.publish(final_pos__)
+                    traditionalTarget_pub.publish(final_pos__)
+                    # permission_pub.publish(1)
                     result_pub.publish(str(num_list_only_num))
                     firstScout_pub.publish(1) 
-                    console.close()
-                    break 
+                    while True:
+                        if permission!=-1:
+                            break
+                    if permission==1:
+                        break
+                    # console.close()
+                    # break 
                     # print(1)
                 else:
                     # print(2)
-                    permission_pub.publish(0)
+                    # permission_pub.publish(0)
                     result_pub.publish("circle fail")
                     firstScout_pub.publish(0)   
             else:
                 # print(3)
-                target_pub.publish(final_pos__)
-                permission_pub.publish(1)
+                # traditionalTarget_pub.publish(final_pos__)
+                # permission_pub.publish(1)
             # for i in range(100):
+                target_pub.publish(final_pos__)
                 result_pub.publish(str(num_list_only_num))  
-                console.close()
+                # console.close()
                 break
             # savepath=os.path.join(path,"output.txt")
             # with open(savepath, 'a') as file: 
@@ -775,6 +789,7 @@ def main():
         #     console.close()
         #     break
         rate.sleep()
+    cap.release()
     while True:
         if referenceMode!=-1:
             break
@@ -804,16 +819,22 @@ def main():
                 SLAM_target+=minTarget
                 SLAM_num+=1
         SLAM_target/=SLAM_num
-        return SLAM_target
+        return SLAM_target,SLAM_num
     if referenceMode==1 or referenceMode==2:
         dataList=dataList_s[referenceMode-1]
-        SLAMTarget=getSLAMTarget(dataList)
-        
+        SLAMTarget,SLAM_num=getSLAMTarget(dataList)
+        if SLAM_num<3:
+            SLAMTarget=[-1,-1,-1]
     elif referenceMode==3:
         SLAMTarget=np.zeros(3,dtype=float)
+        SLAM_num=0
         for dataList in dataList_s:
-            SLAMTarget+=getSLAMTarget(dataList)
+            SLAMTarget_,SLAM_num_=getSLAMTarget(dataList)
+            SLAMTarget+=SLAMTarget_
+            SLAM_num+=SLAM_num_
         SLAMTarget/=2
+        if SLAM_num<6:
+            SLAMTarget=[-1,-1,-1]
     SLAMTarget_ros=Point()
     SLAMTarget_ros.x=SLAMTarget[0]
     SLAMTarget_ros.y=SLAMTarget[1]
