@@ -521,31 +521,32 @@ def main():
                 for result in results_classify1:
                     name=result.path
                     boxes=result.boxes
-                    x1=boxes.xywh[0][0]
-                    prob1=boxes.conf[0]
-                    num1=(int)(boxes.cls[0])
-                    x2=boxes.xywh[1][0]
-                    prob2=boxes.conf[1]
-                    num2=(int)(boxes.cls[1])
-                    if x1<=x2:
-                        num=num1*10+num2
-                    else:
-                        num=num1+num2*10
-                    # dict1[int(name.split('/')[-1].split('.')[0].split('_')[1])][name.split('/')[-1].split('.')[0].split('_')[-1]]=(int(result.probs.top1),result.probs.top1conf)
-                    alldata=alldataList[mapofclear[int(name.split('/')[-1].split('.')[0].split('_')[0])]]
-                    imgdata = pos.Imgdata(pos=alldata.pos,num=num,
-                                        yaw=alldata.yaw,cropTensorList=cls_sources[int(name.split('/')[-1].split('.')[0].split('_')[1])][int(name.split('/')[-1].split('.')[0].split('_')[-1])],
-                                        speed=alldata.speed,filename=name)
-                    prob=min(prob1,prob2)
-                    num_and_prob=(num,prob)
-                    num_list.append(num_and_prob)
-                    dataList.append(imgdata)
-                    if prob>=0.7:
-                        trusted_num_list.append(num)
-                        trusted_dataList.append(imgdata)
-                    # print("Classify num is:" + str(num))
-                    # savepath=os.path.join(path,'output.txt')
-                    # with open(savepath, 'a') as file:
+                    if(boxes.xywh.size(0)>=2):
+                        x1=boxes.xywh[0][0]
+                        prob1=boxes.conf[0]
+                        num1=(int)(boxes.cls[0])
+                        x2=boxes.xywh[1][0]
+                        prob2=boxes.conf[1]
+                        num2=(int)(boxes.cls[1])
+                        if x1<=x2:
+                            num=num1*10+num2
+                        else:
+                            num=num1+num2*10
+                        # dict1[int(name.split('/')[-1].split('.')[0].split('_')[1])][name.split('/')[-1].split('.')[0].split('_')[-1]]=(int(result.probs.top1),result.probs.top1conf)
+                        alldata=alldataList[mapofclear[int(name.split('/')[-1].split('.')[0].split('_')[0])]]
+                        imgdata = pos.Imgdata(pos=alldata.pos,num=num,
+                                            yaw=alldata.yaw,cropTensorList=cls_sources[int(name.split('/')[-1].split('.')[0].split('_')[1])][int(name.split('/')[-1].split('.')[0].split('_')[-1])],
+                                            speed=alldata.speed,filename=name)
+                        prob=min(prob1,prob2)
+                        num_and_prob=(num,prob)
+                        num_list.append(num_and_prob)
+                        dataList.append(imgdata)
+                        if prob>=0.7:
+                            trusted_num_list.append(num)
+                            trusted_dataList.append(imgdata)
+                        # print("Classify num is:" + str(num))
+                        # savepath=os.path.join(path,'output.txt')
+                        # with open(savepath, 'a') as file:
                     file.write("Classify num is:" + str(num) +' '+str(prob)+' '+str(name)+"\n")
                 # results_classify2=modelClassify.predict(
                 #     source=os.path.join(path,f'{circle_number}crop2'),
@@ -586,24 +587,24 @@ def main():
                 )
                 for result in results_classify:
                     name=result.path
-                    
-                    num=pattern_dic[int(result.probs.top1)]
-                    alldata=alldataList[mapofclear[int(name.split('/')[-1].split('.')[0].split('_')[0])]]
-                    imgdata = pos.Imgdata(pos=alldata.pos,num=num,
-                                        yaw=alldata.yaw,cropTensorList=cls_sources[int(name.split('/')[-1].split('.')[0].split('_')[1])][int(name.split('/')[-1].split('.')[0].split('_')[-1])],
-                                        speed=alldata.speed,filename=name)
-                    num_and_prob=(num,result.probs.top1conf)
-                    num_list.append(num_and_prob)
-                    dataList.append(imgdata)
-                    if result.probs.top1conf>=0.7:
-                        trusted_num_list.append(num)
-                        trusted_dataList.append(imgdata)
-                    # print("Classify num is:" + str(num))
-                    # savepath=os.path.join(path,'output.txt')
-                    # with open(savepath, 'a') as file:
+                    if result.probs.top1>=0.8:
+                        num=pattern_dic[int(result.probs.top1)]
+                        alldata=alldataList[mapofclear[int(name.split('/')[-1].split('.')[0].split('_')[0])]]
+                        imgdata = pos.Imgdata(pos=alldata.pos,num=num,
+                                            yaw=alldata.yaw,cropTensorList=cls_sources[int(name.split('/')[-1].split('.')[0].split('_')[1])][int(name.split('/')[-1].split('.')[0].split('_')[-1])],
+                                            speed=alldata.speed,filename=name)
+                        num_and_prob=(num,result.probs.top1conf)
+                        num_list.append(num_and_prob)
+                        dataList.append(imgdata)
+                        if result.probs.top1conf>=0.7:
+                            trusted_num_list.append(num)
+                            trusted_dataList.append(imgdata)
+                        # print("Classify num is:" + str(num))
+                        # savepath=os.path.join(path,'output.txt')
+                        # with open(savepath, 'a') as file:
                     file.write("Classify num is:" + str(num) +' '+str(result.probs.top1conf)+' '+str(name)+"\n")
-                    # alldata=alldataList[mapofclear[i+bias]]e.write("Classify num is:" + str(num) +' '+str(results_classify1[0].probs.top1conf)+' '+str(results_classify2[0].probs.top1conf) +"\n")
-                    # alldata=alldataList[mapofclear[i+bias]]
+                        # alldata=alldataList[mapofclear[i+bias]]e.write("Classify num is:" + str(num) +' '+str(results_classify1[0].probs.top1conf)+' '+str(results_classify2[0].probs.top1conf) +"\n")
+                        # alldata=alldataList[mapofclear[i+bias]]
 
             common_trusted_num_list=most_common_numbers(trusted_num_list)
             zero_poses=[np.zeros(3),np.zeros(3),np.zeros(3)]
