@@ -370,7 +370,7 @@ def main():
     cap.set(cv2.CAP_PROP_FPS, 30)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, fw)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, fh)
-    cap.set(cv2.CAP_PROP_BUFFERSIZE, 8)
+    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
     while True:
         if wp==c1start or wp==c2start:
@@ -414,28 +414,31 @@ def main():
             os.makedirs(clearframesPath,exist_ok=True)
             # out = cv2.VideoWriter(f"/home/amov/Desktop/well{folder_name}/output{circle_number}.mp4", fourcc, 30, (1920, 1080))
             # file=open(os.path.join(path,"odom.txt"),'a')
-            while True:                                
-                # if cap.isOpened():
-                    # print("camera is opened")
-                _, frame = cap.read()
-                # if success == True:
-                if wp == c1end or wp== c2end:
-                    # print("code exit by point")
-                    break
-                # out.write(frame)
-                cv2.imwrite(os.path.join(outpath,f'{frameid}.jpg'),frame)
-                
-                allimgdata = pos.Imgdata(pos=[local_x, local_y, local_z],  num=-1, 
-                                        yaw=local_yaw, cropTensorList=[(0,0),(0,0),(0,0),(0,0)],
-                                        speed=[local_vel_x, local_vel_y, local_vel_z],)
-                alldataList.append(allimgdata)
-                #todo 所有坐标结果记录下来，同时记录图片对应的pos和
-                with open(os.path.join(path,"odom.txt"),'a') as file:
-                    file.write(f"{frameid} global: "+str(local_x)+' '+str(local_y)+' '+str(local_z)+' '+str(local_vel_x)+' '+str(local_vel_y)+' '+str(local_vel_z)+' '+str(local_yaw)+'\n')
-                    # file.write("local: "+str(odom_x)+' '+str(odom_y)+' '+str(odom_z)+' '+str(odom_vel_x)+' '+str(odom_vel_y)+' '+str(odom_vel_z)+' '+str(odom_yaw)+'\n')
-                # if cv2.waitKey(1) & 0xFF == ord('q'):
-                #     break
-                frameid+=1
+            with open(os.path.join(path,"odom.txt"),'a') as file:
+                while True:                                
+                    # if cap.isOpened():
+                        # print("camera is opened")
+                    cur_x,cur_y,cur_z,cur_v_x,cur_v_y,cur_v_z,cur_yaw=local_x,local_y,local_z,local_vel_x,local_vel_y,local_vel_z,local_yaw
+                    _, frame = cap.read()
+                    # if success == True:
+                    if wp == c1end or wp== c2end:
+                        # print("code exit by point")
+                        break
+                    allimgdata = pos.Imgdata(pos=[cur_x, cur_y, cur_z],  num=-1, 
+                                            yaw=cur_yaw, cropTensorList=[(0,0),(0,0),(0,0),(0,0)],
+                                            speed=[cur_v_x, cur_v_y, cur_v_z],)
+                    alldataList.append(allimgdata)
+                    # out.write(frame)
+                    cv2.imwrite(os.path.join(outpath,f'{frameid}.jpg'),frame)
+                    
+                    
+                    #todo 所有坐标结果记录下来，同时记录图片对应的pos和
+                    
+                    file.write(f"{frameid} global: "+str(cur_x)+' '+str(cur_y)+' '+str(cur_z)+' '+str(cur_v_x)+' '+str(cur_v_y)+' '+str(cur_v_z)+' '+str(cur_yaw)+'\n')
+                        # file.write("local: "+str(odom_x)+' '+str(odom_y)+' '+str(odom_z)+' '+str(odom_vel_x)+' '+str(odom_vel_y)+' '+str(odom_vel_z)+' '+str(odom_yaw)+'\n')
+                    # if cv2.waitKey(1) & 0xFF == ord('q'):
+                    #     break
+                    frameid+=1
                 # else:
                 #     break
                 # rate.sleep()
