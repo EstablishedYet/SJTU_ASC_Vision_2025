@@ -101,7 +101,7 @@ def main():
 
         ser.close()
 
-    cameraAdjust()
+    # cameraAdjust()
 
     parser=argparse.ArgumentParser()
     parser.add_argument('--mode',type=str)
@@ -355,7 +355,7 @@ def main():
     rospy.Subscriber("/mavros/local_position/odom",Odometry,odom_cb,queue_size=1)
     frameid=0
     framestart=0
-    cameraAdjust()
+    # cameraAdjust()
     id=0
     while id<=30:
         cap = cv2.VideoCapture(id)
@@ -390,7 +390,7 @@ def main():
 #             cap.set(cv2.CAP_PROP_FRAME_WIDTH, fw)
 #             cap.set(cv2.CAP_PROP_FRAME_HEIGHT, fh)
 #             cap.set(cv2.CAP_PROP_BUFFERSIZE, 8)
-            cameraAdjust()
+            # cameraAdjust()
             # frameWidth = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
             # frameHeight = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
             # frameFps = cap.get(cv2.CAP_PROP_FPS)  # 帧率
@@ -414,32 +414,32 @@ def main():
             os.makedirs(clearframesPath,exist_ok=True)
             # out = cv2.VideoWriter(f"/home/amov/Desktop/well{folder_name}/output{circle_number}.mp4", fourcc, 30, (1920, 1080))
             # file=open(os.path.join(path,"odom.txt"),'a')
-            while not rospy.is_shutdown():                                
-                if cap.isOpened():
+            while True:                                
+                # if cap.isOpened():
                     # print("camera is opened")
-                    success, frame = cap.read()
-                    if success == True:
-                        if wp == c1end or wp== c2end:
-                            # print("code exit by point")
-                            break
-                        # out.write(frame)
-                        cv2.imwrite(os.path.join(outpath,f'{frameid}.jpg'),frame)
-                        
-                        allimgdata = pos.Imgdata(pos=[local_x, local_y, local_z],  num=-1, 
-                                                yaw=local_yaw, cropTensorList=[(0,0),(0,0),(0,0),(0,0)],
-                                                speed=[local_vel_x, local_vel_y, local_vel_z],)
-                        alldataList.append(allimgdata)
-                        #todo 所有坐标结果记录下来，同时记录图片对应的pos和
-                        with open(os.path.join(path,"odom.txt"),'a') as file:
-                            file.write(f"{frameid} global: "+str(local_x)+' '+str(local_y)+' '+str(local_z)+' '+str(local_vel_x)+' '+str(local_vel_y)+' '+str(local_vel_z)+' '+str(local_yaw)+'\n')
-                            # file.write("local: "+str(odom_x)+' '+str(odom_y)+' '+str(odom_z)+' '+str(odom_vel_x)+' '+str(odom_vel_y)+' '+str(odom_vel_z)+' '+str(odom_yaw)+'\n')
-                        # if cv2.waitKey(1) & 0xFF == ord('q'):
-                        #     break
-                        frameid+=1
-                    else:
-                        break
+                _, frame = cap.read()
+                # if success == True:
+                if wp == c1end or wp== c2end:
+                    # print("code exit by point")
+                    break
+                # out.write(frame)
+                cv2.imwrite(os.path.join(outpath,f'{frameid}.jpg'),frame)
+                
+                allimgdata = pos.Imgdata(pos=[local_x, local_y, local_z],  num=-1, 
+                                        yaw=local_yaw, cropTensorList=[(0,0),(0,0),(0,0),(0,0)],
+                                        speed=[local_vel_x, local_vel_y, local_vel_z],)
+                alldataList.append(allimgdata)
+                #todo 所有坐标结果记录下来，同时记录图片对应的pos和
+                with open(os.path.join(path,"odom.txt"),'a') as file:
+                    file.write(f"{frameid} global: "+str(local_x)+' '+str(local_y)+' '+str(local_z)+' '+str(local_vel_x)+' '+str(local_vel_y)+' '+str(local_vel_z)+' '+str(local_yaw)+'\n')
+                    # file.write("local: "+str(odom_x)+' '+str(odom_y)+' '+str(odom_z)+' '+str(odom_vel_x)+' '+str(odom_vel_y)+' '+str(odom_vel_z)+' '+str(odom_yaw)+'\n')
+                # if cv2.waitKey(1) & 0xFF == ord('q'):
+                #     break
+                frameid+=1
+                # else:
+                #     break
                 # rate.sleep()
-            cap.release()
+            # cap.release()
             # file.close()
             # cv2.destroyAllWindows()
             
