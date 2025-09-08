@@ -32,6 +32,7 @@ int main()
     filesystem::remove_all(path);
     filesystem::create_directory(path);
     ofstream file(path+"log.txt");
+    file<<fixed;
     int i=0;
     while(true)
     {
