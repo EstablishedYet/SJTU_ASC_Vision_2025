@@ -598,7 +598,8 @@ def main():
                         dataList.append(imgdata)
                         if result.probs.top1conf>=0.7:
                             trusted_num_list.append(num)
-                            trusted_dataList.append(imgdata)
+                            trusted_dataList.append(imgdata) 
+                            
                         # print("Classify num is:" + str(num))
                         # savepath=os.path.join(path,'output.txt')
                         # with open(savepath, 'a') as file:
