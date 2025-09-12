@@ -547,7 +547,7 @@ def main():
                         # print("Classify num is:" + str(num))
                         # savepath=os.path.join(path,'output.txt')
                         # with open(savepath, 'a') as file:
-                    file.write("Classify num is:" + str(num) +' '+str(prob)+' '+str(name)+"\n")
+                        file.write("Classify num is:" + str(num) +' '+str(prob)+' '+str(name)+"\n")
                 # results_classify2=modelClassify.predict(
                 #     source=os.path.join(path,f'{circle_number}crop2'),
                 #     imgsz=640,
@@ -587,23 +587,23 @@ def main():
                 )
                 for result in results_classify:
                     name=result.path
-                    if result.probs.top1>=0.8:
-                        num=pattern_dic[int(result.probs.top1)]
-                        alldata=alldataList[mapofclear[int(name.split('/')[-1].split('.')[0].split('_')[0])]]
-                        imgdata = pos.Imgdata(pos=alldata.pos,num=num,
-                                            yaw=alldata.yaw,cropTensorList=cls_sources[int(name.split('/')[-1].split('.')[0].split('_')[1])][int(name.split('/')[-1].split('.')[0].split('_')[-1])],
-                                            speed=alldata.speed,filename=name)
-                        num_and_prob=(num,result.probs.top1conf)
-                        num_list.append(num_and_prob)
-                        dataList.append(imgdata)
-                        if result.probs.top1conf>=0.7:
-                            trusted_num_list.append(num)
-                            trusted_dataList.append(imgdata) 
+                    # if result.probs.top1>=0.8:
+                    num=pattern_dic[int(result.probs.top1)]
+                    alldata=alldataList[mapofclear[int(name.split('/')[-1].split('.')[0].split('_')[0])]]
+                    imgdata = pos.Imgdata(pos=alldata.pos,num=num,
+                                        yaw=alldata.yaw,cropTensorList=cls_sources[int(name.split('/')[-1].split('.')[0].split('_')[1])][int(name.split('/')[-1].split('.')[0].split('_')[-1])],
+                                        speed=alldata.speed,filename=name)
+                    num_and_prob=(num,result.probs.top1conf)
+                    num_list.append(num_and_prob)
+                    dataList.append(imgdata)
+                    if result.probs.top1conf>=0.7:
+                        trusted_num_list.append(num)
+                        trusted_dataList.append(imgdata) 
                             
                         # print("Classify num is:" + str(num))
                         # savepath=os.path.join(path,'output.txt')
                         # with open(savepath, 'a') as file:
-                        file.write("Classify num is:" + str(num) +' '+str(result.probs.top1conf)+' '+str(name)+"\n")
+                    file.write("Classify num is:" + str(num) +' '+str(result.probs.top1conf)+' '+str(name)+"\n")
                         # alldata=alldataList[mapofclear[i+bias]]e.write("Classify num is:" + str(num) +' '+str(results_classify1[0].probs.top1conf)+' '+str(results_classify2[0].probs.top1conf) +"\n")
                         # alldata=alldataList[mapofclear[i+bias]]
 
@@ -823,8 +823,8 @@ def auto_rotate(img,rank,rotate_num,number,path,circle_number):
     ROIdown=img[premaskdown==255]
     sortedUp=np.sort(ROIup)
     sortedDown=np.sort(ROIdown)
-    up_70=sortedUp[sortedUp.size*0.7]
-    down_70=sortedDown[sortedDown.size*0.7]
+    up_70=sortedUp[int(sortedUp.size*0.7)]
+    down_70=sortedDown[int(sortedDown.size*0.7)]
     # varup=np.var(ROIup)
     # vardown=np.var(ROIdown)
     if up_70>=down_70:
