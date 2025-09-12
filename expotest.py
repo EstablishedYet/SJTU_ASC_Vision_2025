@@ -35,29 +35,29 @@ while id<=30:
             # for i in range(5):
             #     cap.read()
         break
-path=rf"E:\2024-2025summer\expotest\{time.time_ns()}"
+path=rf"/home/amov/expotest/{time.time_ns()}"
 os.makedirs(path)
 while True:
-    t0=time.time_ns()
+    t1=t0=time.time_ns()
     for i in range(5):
-        frame=cap.read()
+        _,frame=cap.read()
+        curTime=time.time_ns()
         frame=cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
         frame_sum=np.sum(frame)
-        print(frame_sum)
-        curTime=time.time_ns()
-        print(curTime-t0)
+        print(frame_sum,curTime-t0,curTime-t1)
         t0=curTime
-    testframe=cap.read()
+    _,testframe=cap.read() 
     cv2.imwrite(os.path.join(path,f"{expo}.jpg"),testframe)
     testframe=cv2.cvtColor(testframe,cv2.COLOR_BGR2GRAY)
     testframe_sum=np.sum(testframe)/(testframe.shape[0]*testframe.shape[1])
     if (testframe_sum>=25 and testframe_sum<=125):
         break
-    elif testframe_sum<25:
-        expo-=4
+    elif testframe_sum>125:
+        expo-=5
         if expo<=0:
             break
     else:
         expo+=10
     subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", "exposure_auto=1"])
     subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", f"exposure_absolute={expo}"])
+    t1=time.time_ns()
