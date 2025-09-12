@@ -603,7 +603,7 @@ def main():
                         # print("Classify num is:" + str(num))
                         # savepath=os.path.join(path,'output.txt')
                         # with open(savepath, 'a') as file:
-                    file.write("Classify num is:" + str(num) +' '+str(result.probs.top1conf)+' '+str(name)+"\n")
+                        file.write("Classify num is:" + str(num) +' '+str(result.probs.top1conf)+' '+str(name)+"\n")
                         # alldata=alldataList[mapofclear[i+bias]]e.write("Classify num is:" + str(num) +' '+str(results_classify1[0].probs.top1conf)+' '+str(results_classify2[0].probs.top1conf) +"\n")
                         # alldata=alldataList[mapofclear[i+bias]]
 
