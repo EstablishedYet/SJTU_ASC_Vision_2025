@@ -114,8 +114,10 @@ def main():
     parser.add_argument('--numOfFrame',type=int,default=18)
     parser.add_argument('--numOfCircle',type=int,default=2)
     parser.add_argument('--numOfProcs',type=int,default=8)
+    parser.add_argument('--checkpoint',type=int,default=1)
     arg=parser.parse_args()
     
+    checkpoint=arg.checkpoint
     mode=arg.mode
     # retinex=arg.retinex
     clear=arg.clear
@@ -363,14 +365,53 @@ def main():
             id+=1
         else:
             # if(cameraType!='siyi'):
+            cap.set(cv2.CAP_PROP_FOURCC,cv2.VideoWriter_fourcc(*'MJPG'))
+            cap.set(cv2.CAP_PROP_FPS, 30)
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, fw)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, fh)
+            cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+            
+            # while(True):
             subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", "exposure_auto=1"])
             subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", f"exposure_absolute={expo}"])
+            for i in range(5):
+                cap.read()
+                # testframe=cap.read()
+
+                # testframe_sum=np.sum(testframe)/(testframe.shape[0]*testframe.shape[1])
+                # if testframe_sum>=25 and testframe_sum<=125:
+                #     break
+                # elif testframe_sum<25:
+                #     expo-=4
+                #     if expo<=0:
+                #         break
+                # else:
+                #     expo+=10
+                # for i in range(5):
+                #     cap.read()
             break
-    cap.set(cv2.CAP_PROP_FOURCC,cv2.VideoWriter_fourcc(*'MJPG'))
-    cap.set(cv2.CAP_PROP_FPS, 30)
-    cap.set(cv2.CAP_PROP_FRAME_WIDTH, fw)
-    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, fh)
-    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+    while True:
+        if wp>=checkpoint:
+            while True:
+                for i in range(5):
+                    cap.read()
+                testframe=cap.read()
+                cv2.imwrite(os.path.join(path,f"{expo}.jpg"),testframe)
+                testframe=cv2.cvtColor(testframe,cv2.COLOR_BGR2GRAY)
+                testframe_sum=np.sum(testframe)/(testframe.shape[0]*testframe.shape[1])
+                if (testframe_sum>=25 and testframe_sum<=125) or wp==c1start:
+                    break
+                elif testframe_sum<25:
+                    expo-=4
+                    if expo<=0:
+                        break
+                else:
+                    expo+=10
+                subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", "exposure_auto=1"])
+                subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", f"exposure_absolute={expo}"])
+            print(expo)
+            break
+        rate.sleep()
 
     while True:
         if wp==c1start or wp==c2start:
