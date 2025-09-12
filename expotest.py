@@ -37,8 +37,10 @@ while id<=30:
         break
 path=rf"/home/amov/expotest/{time.time_ns()}"
 os.makedirs(path)
+t1=time.time_ns()
 while True:
-    t1=t0=time.time_ns()
+    print(expo)
+    t0=time.time_ns()
     for i in range(5):
         _,frame=cap.read()
         curTime=time.time_ns()
