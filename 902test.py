@@ -162,11 +162,11 @@ def main():
     fw=2560
     fh=1440
     expo=10
-    mtx = np.array([[2.79879891e+03,0.00000000e+00,1.21998427e+03],
-    [0.00000000e+00,2.80829486e+03,5.92931523e+02],
+    mtx = np.array([[2.8724e+03,0.00000000e+00,1.2342e+03],
+    [0.00000000e+00,2.8657e+03,6.891308e+02],
     [0.00000000e+00,0.00000000e+00,1.00000000e+00]])
 
-    dist = np.array([-4.34593215e-01,-5.30768215e-01,1.28055618e-03,3.36617072e-03,1.87344364e+00])
+    dist = np.array([-0.5018,0.2920,-0.0034,0.0010,-0.2113])
     nmtx, _ = cv2.getOptimalNewCameraMatrix(mtx, dist, (fw,fh), alpha=1)
 
     if mode=="number":
@@ -821,9 +821,13 @@ def auto_rotate(img,rank,rotate_num,number,path,circle_number):
     # maskdown=np.bitwise_and(img,premaskdown)
     ROIup=img[premaskup==255]
     ROIdown=img[premaskdown==255]
-    varup=np.var(ROIup)
-    vardown=np.var(ROIdown)
-    if varup>vardown:
+    sortedUp=np.sort(ROIup)
+    sortedDown=np.sort(ROIdown)
+    up_70=sortedUp[sortedUp.size*0.7]
+    down_70=sortedDown[sortedDown.size*0.7]
+    # varup=np.var(ROIup)
+    # vardown=np.var(ROIdown)
+    if up_70>=down_70:
         img=cv2.rotate(img,cv2.ROTATE_180)
     h,w=img.shape[:2]
     img=img[h//3+2*h//3//8:h-2*h//3//8,w//8:w-w//8] #h//3+2*h//3//8
