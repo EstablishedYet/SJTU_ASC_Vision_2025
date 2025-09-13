@@ -1,7 +1,7 @@
 import cv2
 import os
 import numpy as np
-path=r"F:\8\2clearframes"
+path=r"F:\17\2clearframes"
 
 for i in os.listdir(path):
     frame=cv2.imread(os.path.join(path,i))

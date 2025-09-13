@@ -390,6 +390,7 @@ def main():
                 # for i in range(5):
                 #     cap.read()
             break
+    lastframe_sum=0
     while True:
         if wp>=checkpoint:
             while True:
@@ -399,15 +400,22 @@ def main():
                 # cv2.imwrite(os.path.join(path,f"{expo}.jpg"),testframe)
                 testframe=cv2.cvtColor(testframe,cv2.COLOR_BGR2GRAY)
                 testframe_sum=np.sum(testframe)/(testframe.shape[0]*testframe.shape[1])
-                if (testframe_sum>=25 and testframe_sum<=125) or wp==c1start:
+                if (testframe_sum>=25 and testframe_sum<=125):
                     break
                 elif testframe_sum>125:
+                    if lastframe_sum<25:
+                        if 25-lastframe_sum>=testframe_sum-125:
+                            break
+                        else:
+                            subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", f"exposure_absolute={expo-10}"])
                     expo-=5
                     if expo<=0:
                         break
+                    lastframe_sum=testframe_sum
                 else:
                     expo+=10
-                subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", "exposure_auto=1"])
+                    lastframe_sum=testframe_sum
+                
                 subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", f"exposure_absolute={expo}"])
             print(expo)
             break
