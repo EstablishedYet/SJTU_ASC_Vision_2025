@@ -163,13 +163,14 @@ def main():
 
     fw=2560
     fh=1440
-    expo=10
+    # expo=10
     mtx = np.array([[2.8724e+03,0.00000000e+00,1.2342e+03],
     [0.00000000e+00,2.8657e+03,6.891308e+02],
     [0.00000000e+00,0.00000000e+00,1.00000000e+00]])
 
     dist = np.array([-0.5018,0.2920,-0.0034,0.0010,-0.2113])
     nmtx, _ = cv2.getOptimalNewCameraMatrix(mtx, dist, (fw,fh), alpha=1)
+    exposures=[1,4,8,15,30,50,90]
 
     if mode=="number":
         MODELCLASSIFY = modelclassify_number
@@ -370,10 +371,10 @@ def main():
             cap.set(cv2.CAP_PROP_FRAME_WIDTH, fw)
             cap.set(cv2.CAP_PROP_FRAME_HEIGHT, fh)
             cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-            
+            expo_id=2
             # while(True):
             subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", "exposure_auto=1"])
-            subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", f"exposure_absolute={expo}"])
+            subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", f"exposure_absolute={exposures[expo_id]}"])
             # for i in range(5):
             #     cap.read()
                 # testframe=cap.read()
@@ -393,31 +394,47 @@ def main():
     lastframe_sum=0
     while True:
         if wp>=checkpoint:
-            while True:
-                for i in range(2):
+            cap.read()
+            cap.read()
+            _,testframe=cap.read()
+            # cv2.imwrite(os.path.join(path,f"{expo}.jpg"),testframe)
+            testframe=cv2.cvtColor(testframe,cv2.COLOR_BGR2GRAY)
+            lastframe_sum=testframe_sum=np.sum(testframe)/(testframe.shape[0]*testframe.shape[1])
+            if testframe_sum>=125:
+                while expo_id>0:
+                    expo_id-=1
+                    subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", f"exposure_absolute={exposures[expo_id]}"])
                     cap.read()
-                _,testframe=cap.read()
-                # cv2.imwrite(os.path.join(path,f"{expo}.jpg"),testframe)
-                testframe=cv2.cvtColor(testframe,cv2.COLOR_BGR2GRAY)
-                testframe_sum=np.sum(testframe)/(testframe.shape[0]*testframe.shape[1])
-                if (testframe_sum>=25 and testframe_sum<=125):
-                    break
-                elif testframe_sum>125:
-                    if lastframe_sum<25:
-                        if 25-lastframe_sum>=testframe_sum-125:
+                    cap.read()
+                    _,testframe=cap.read()
+                    testframe=cv2.cvtColor(testframe,cv2.COLOR_BGR2GRAY)
+                    testframe_sum=np.sum(testframe)/(testframe.shape[0]*testframe.shape[1])
+                    if testframe_sum<125:
+                        if 25-testframe_sum<lastframe_sum-125:
                             break
                         else:
-                            subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", f"exposure_absolute={expo-10}"])
-                    expo-=5
-                    if expo<=0:
-                        break
+                            expo_id+=1
+                            subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", f"exposure_absolute={exposures[expo_id]}"])
+                            break
                     lastframe_sum=testframe_sum
-                else:
-                    expo+=10
+            elif testframe_sum<=25:
+                while expo_id<len(exposures)-1:
+                    expo_id+=1
+                    subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", f"exposure_absolute={exposures[expo_id]}"])
+                    cap.read()
+                    cap.read()
+                    _,testframe=cap.read()
+                    testframe=cv2.cvtColor(testframe,cv2.COLOR_BGR2GRAY)
+                    testframe_sum=np.sum(testframe)/(testframe.shape[0]*testframe.shape[1])
+                    if testframe_sum>25:
+                        if 25-lastframe_sum>testframe_sum-125:
+                            break
+                        else:
+                            expo_id-=1
+                            subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", f"exposure_absolute={exposures[expo_id]}"])
+                            break
                     lastframe_sum=testframe_sum
-                
-                subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", f"exposure_absolute={expo}"])
-            print(expo)
+            print(exposures[expo_id])
             break
         rate.sleep()
 
