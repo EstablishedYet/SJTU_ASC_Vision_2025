@@ -568,6 +568,7 @@ def main():
             with multiprocessing.Pool(processes=numOfProcs) as pool:
                 cls_sources=pool.map(cls_predict,divided_results)
             file=open(os.path.join(path,'output.txt'), 'a')
+            file.write(str(time.localtime())+'\n')
             if mode=="number":
                 # dict1={0:{},1:{},2:{},3:{},4:{},5:{},6:{},7:{}}
                 # dict1={}
