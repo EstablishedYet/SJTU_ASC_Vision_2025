@@ -392,6 +392,8 @@ def main():
                 #     cap.read()
             break
     lastframe_sum=0
+    sum_low=50
+    sum_high=125
     while True:
         if wp>=checkpoint:
             cap.read()
@@ -400,7 +402,7 @@ def main():
             # cv2.imwrite(os.path.join(path,f"{expo}.jpg"),testframe)
             testframe=cv2.cvtColor(testframe,cv2.COLOR_BGR2GRAY)
             lastframe_sum=testframe_sum=np.sum(testframe)/(testframe.shape[0]*testframe.shape[1])
-            if testframe_sum>=125:
+            if testframe_sum>=sum_high:
                 while expo_id>0:
                     expo_id-=1
                     subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", f"exposure_absolute={exposures[expo_id]}"])
@@ -409,15 +411,15 @@ def main():
                     _,testframe=cap.read()
                     testframe=cv2.cvtColor(testframe,cv2.COLOR_BGR2GRAY)
                     testframe_sum=np.sum(testframe)/(testframe.shape[0]*testframe.shape[1])
-                    if testframe_sum<125:
-                        if 25-testframe_sum<lastframe_sum-125:
+                    if testframe_sum<sum_high:
+                        if sum_low-testframe_sum<lastframe_sum-sum_high:
                             break
                         else:
                             expo_id+=1
                             subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", f"exposure_absolute={exposures[expo_id]}"])
                             break
                     lastframe_sum=testframe_sum
-            elif testframe_sum<=25:
+            elif testframe_sum<=sum_low:
                 while expo_id<len(exposures)-1:
                     expo_id+=1
                     subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", f"exposure_absolute={exposures[expo_id]}"])
@@ -426,8 +428,8 @@ def main():
                     _,testframe=cap.read()
                     testframe=cv2.cvtColor(testframe,cv2.COLOR_BGR2GRAY)
                     testframe_sum=np.sum(testframe)/(testframe.shape[0]*testframe.shape[1])
-                    if testframe_sum>25:
-                        if 25-lastframe_sum>testframe_sum-125:
+                    if testframe_sum>sum_low:
+                        if sum_low-lastframe_sum>testframe_sum-sum_high:
                             break
                         else:
                             expo_id-=1
