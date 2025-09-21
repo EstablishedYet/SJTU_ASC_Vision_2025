@@ -106,7 +106,7 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--mode',type=str)
     # parser.add_argument('--retinex',type=int,default=1)
-    parser.add_argument('--clear',type=int,default=0)
+    # parser.add_argument('--clear',type=int,default=0)
     parser.add_argument('--c1start',type=int,default=7)
     parser.add_argument('--c1end',type=int,default=8)
     parser.add_argument('--c2start',type=int,default=13)
@@ -120,7 +120,7 @@ def main():
     checkpoint=arg.checkpoint
     mode=arg.mode
     # retinex=arg.retinex
-    clear=arg.clear
+    # clear=arg.clear
     c1start=arg.c1start
     c1end=arg.c1end
     c2start=arg.c2start
@@ -360,42 +360,43 @@ def main():
     framestart=0
     # cameraAdjust()
     id=0
-    while id<=30:
-        cap = cv2.VideoCapture(id)
-        if not cap.isOpened():
-            id+=1
-        else:
-            # if(cameraType!='siyi'):
-            cap.set(cv2.CAP_PROP_FOURCC,cv2.VideoWriter_fourcc(*'MJPG'))
-            cap.set(cv2.CAP_PROP_FPS, 30)
-            cap.set(cv2.CAP_PROP_FRAME_WIDTH, fw)
-            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, fh)
-            cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-            expo_id=2
-            # while(True):
-            subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", "exposure_auto=1"])
-            subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", f"exposure_absolute={exposures[expo_id]}"])
-            # for i in range(5):
-            #     cap.read()
-                # testframe=cap.read()
-
-                # testframe_sum=np.sum(testframe)/(testframe.shape[0]*testframe.shape[1])
-                # if testframe_sum>=25 and testframe_sum<=125:
-                #     break
-                # elif testframe_sum<25:
-                #     expo-=4
-                #     if expo<=0:
-                #         break
-                # else:
-                #     expo+=10
-                # for i in range(5):
-                #     cap.read()
-            break
+    
     lastframe_sum=0
     sum_low=50
     sum_high=125
     while True:
         if wp>=checkpoint:
+            while id<=30:
+                cap = cv2.VideoCapture(id)
+                if not cap.isOpened():
+                    id+=1
+                else:
+                    # if(cameraType!='siyi'):
+                    cap.set(cv2.CAP_PROP_FOURCC,cv2.VideoWriter_fourcc(*'MJPG'))
+                    cap.set(cv2.CAP_PROP_FPS, 30)
+                    cap.set(cv2.CAP_PROP_FRAME_WIDTH, fw)
+                    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, fh)
+                    cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+                    expo_id=2
+                    # while(True):
+                    subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", "exposure_auto=1"])
+                    subprocess.run(["v4l2-ctl", f"--device=/dev/video{id}", "--set-ctrl", f"exposure_absolute={exposures[expo_id]}"])
+                    # for i in range(5):
+                    #     cap.read()
+                        # testframe=cap.read()
+
+                        # testframe_sum=np.sum(testframe)/(testframe.shape[0]*testframe.shape[1])
+                        # if testframe_sum>=25 and testframe_sum<=125:
+                        #     break
+                        # elif testframe_sum<25:
+                        #     expo-=4
+                        #     if expo<=0:
+                        #         break
+                        # else:
+                        #     expo+=10
+                        # for i in range(5):
+                        #     cap.read()
+                    break
             cap.read()
             cap.read()
             _,testframe=cap.read()
@@ -518,43 +519,55 @@ def main():
             clearid=0
             samples=[]
             if frameid-framestart<numOfFrame:
-                ratio=1
+                sampleList=range(framestart,frameid)
             else:
-                ratio=(frameid-framestart)//numOfFrame
-            if clear==0:
-                for i in range(framestart,frameid):
-                    if (i-framestart)%ratio==0:
-                        # frame=cv2.imread(os.path.join(outpath,f'{i}.jpg'))
-                        clearid=i-framestart
-                        shutil.move(os.path.join(outpath,f'{clearid}.jpg'),os.path.join(clearframesPath,f'{sectionid:04d}.jpg'))
-                        # cv2.imwrite(os.path.join(clearframesPath,f'{sectionid:04d}.jpg'),cv2.imread(os.path.join(outpath,f'{clearid}.jpg')))
-                        mapofclear[sectionid]=clearid
-                        sectionid+=1
+                # ratio=(frameid-framestart)//numOfFrame
+                data=list(range(framestart,frameid))
+                mean=(frameid-framestart)/2
+                std=(frameid-framestart)/3
+                weights = np.exp(-0.5 * ((np.arange(framestart,frameid) - mean) / std) ** 2)
+                weights/=weights.sum()
+                # sampleList=random.sample(range(frameid))
+                sampleList=np.random.choice(data,size=frameid-framestart,replace=False,p=weights)
+            # if clear==0:
+
+            for i in sampleList:
+                # if (i-framestart)%ratio==0:
+                #     # frame=cv2.imread(os.path.join(outpath,f'{i}.jpg'))
+                #     clearid=i-framestart
+                #     shutil.move(os.path.join(outpath,f'{clearid}.jpg'),os.path.join(clearframesPath,f'{sectionid:04d}.jpg'))
+                #     # cv2.imwrite(os.path.join(clearframesPath,f'{sectionid:04d}.jpg'),cv2.imread(os.path.join(outpath,f'{clearid}.jpg')))
+                #     mapofclear[sectionid]=clearid
+                #     sectionid+=1
+                shutil.move(os.path.join(outpath,f'{i}.jpg'),os.path.join(clearframesPath,f'{sectionid:04d}.jpg'))
+                # cv2.imwrite(os.path.join(clearframesPath,f'{sectionid:04d}.jpg'),cv2.imread(os.path.join(outpath,f'{clearid}.jpg')))
+                mapofclear[sectionid]=i-framestart
+                sectionid+=1
                     # if (i+1)%ratio==0 or i==frameid-1:
                     #     cv2.imwrite(os.path.join(clearframesPath,f'{sectionid:04d}.jpg'),cv2.imread(os.path.join(outpath,f'{clearid}.jpg')))
                     #     mapofclear[sectionid]=clearid
                     #     sectionid+=1
-            else:
-                for i in range(framestart,frameid):
-                    if (i-framestart)%ratio==0 :
-                        samples=random.sample(range(i+1,i+ratio),(ratio-1)//2)
-                        frame=cv2.imread(os.path.join(outpath,f'{i}.jpg'))
-                        gray=cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
-                        var=cv2.Laplacian(gray,cv2.CV_64F).var()
-                        maxvar=var
-                        clearid=i-framestart
-                    elif i in samples:
-                        frame=cv2.imread(os.path.join(outpath,f'{i}.jpg'))
-                        gray=cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
-                        var=cv2.Laplacian(gray,cv2.CV_64F).var()
-                        if var>maxvar:
-                            maxvar=var
-                            clearid=i-framestart
-                    if (i-framestart+1)%ratio==0 or i==frameid-1:
-                        shutil.move(os.path.join(outpath,f'{clearid}.jpg'),os.path.join(clearframesPath,f'{sectionid:04d}.jpg'))
-                        # cv2.imwrite(os.path.join(clearframesPath,f'{sectionid:04d}.jpg'),cv2.imread(os.path.join(outpath,f'{clearid}.jpg')))
-                        mapofclear[sectionid]=clearid
-                        sectionid+=1
+            # else:
+            #     for i in range(framestart,frameid):
+            #         if (i-framestart)%ratio==0 :
+            #             samples=random.sample(range(i+1,i+ratio),(ratio-1)//2)
+            #             frame=cv2.imread(os.path.join(outpath,f'{i}.jpg'))
+            #             gray=cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+            #             var=cv2.Laplacian(gray,cv2.CV_64F).var()
+            #             maxvar=var
+            #             clearid=i-framestart
+            #         elif i in samples:
+            #             frame=cv2.imread(os.path.join(outpath,f'{i}.jpg'))
+            #             gray=cv2.cvtColor(frame,cv2.COLOR_BGR2GRAY)
+            #             var=cv2.Laplacian(gray,cv2.CV_64F).var()
+            #             if var>maxvar:
+            #                 maxvar=var
+            #                 clearid=i-framestart
+            #         if (i-framestart+1)%ratio==0 or i==frameid-1:
+            #             shutil.move(os.path.join(outpath,f'{clearid}.jpg'),os.path.join(clearframesPath,f'{sectionid:04d}.jpg'))
+            #             # cv2.imwrite(os.path.join(clearframesPath,f'{sectionid:04d}.jpg'),cv2.imread(os.path.join(outpath,f'{clearid}.jpg')))
+            #             mapofclear[sectionid]=clearid
+            #             sectionid+=1
             framestart=frameid
             t0=time.time()
             results=obb_predict(clearframesPath)
