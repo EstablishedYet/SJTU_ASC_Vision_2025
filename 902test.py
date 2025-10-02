@@ -111,10 +111,10 @@ def main():
     parser.add_argument('--c1end',type=int,default=8)
     parser.add_argument('--c2start',type=int,default=13)
     parser.add_argument('--c2end',type=int,default=14)
-    parser.add_argument('--numOfFrame',type=int,default=18)
+    parser.add_argument('--numOfFrame',type=int,default=50)
     parser.add_argument('--numOfCircle',type=int,default=2)
-    parser.add_argument('--numOfProcs',type=int,default=8)
-    parser.add_argument('--checkpoint',type=int,default=1)
+    parser.add_argument('--numOfProcs',type=int,default=6)
+    parser.add_argument('--checkpoint',type=int,default=2)
     arg=parser.parse_args()
     
     checkpoint=arg.checkpoint
@@ -349,9 +349,11 @@ def main():
 
     rospy.init_node("vision_node")
     rate = rospy.Rate(30)
-    # result_pub = rospy.Publisher("final_result", String, queue_size = 1,latch=True)
-    # target_pub = rospy.Publisher("final_pos",PoseStamped, queue_size = 1,latch=True)
-    # permission_pub=rospy.Publisher("permission",Float64,queue_size=1)
+
+    result_pub = rospy.Publisher("final_result", String, queue_size = 1,latch=True)
+    target_pub = rospy.Publisher("final_pos",PoseStamped, queue_size = 1,latch=True)
+    permission_pub=rospy.Publisher("permission",Float64,queue_size=1)
+
     rospy.Subscriber("/mavros/mission/reached",WaypointReached, wp_reach_cb, queue_size = 1)
     rospy.Subscriber("/mavros/global_position/local", Odometry, loc_pose_callback, queue_size=1)
     rospy.Subscriber("/mavros/gpsstatus/gps_status",NavSatStatus,status_cb,queue_size=1)
@@ -511,7 +513,7 @@ def main():
                 # else:
                 #     break
                 # rate.sleep()
-            # cap.release()
+            cap.release()
             # file.close()
             # cv2.destroyAllWindows()
             
@@ -528,7 +530,8 @@ def main():
                 weights = np.exp(-0.5 * ((np.arange(framestart,frameid) - mean) / std) ** 2)
                 weights/=weights.sum()
                 # sampleList=random.sample(range(frameid))
-                sampleList=np.random.choice(data,size=frameid-framestart,replace=False,p=weights)
+                sampleList=np.random.choice(data,size=numOfFrame,replace=False,p=weights)
+                sampleList=sorted(sampleList)
             # if clear==0:
 
             for i in sampleList:
@@ -691,7 +694,9 @@ def main():
 
             common_trusted_num_list=most_common_numbers(trusted_num_list)
             zero_poses=[np.zeros(3),np.zeros(3),np.zeros(3)]
+            commonCheckedFlag=False
             if common_checked(common_trusted_num_list,len(num_list)):
+                commonCheckedFlag=True
                 for i in range(3):
                     common_trusted_num_list[i]=common_trusted_num_list[i][0]
                 ideal_num = get_ideal(common_trusted_num_list)
@@ -799,23 +804,25 @@ def main():
             final_pos__=PoseStamped()
             final_pos__.pose.position.x=np.float64(real_final_pos[0])
             final_pos__.pose.position.y=np.float64(real_final_pos[1])
-            final_pos__.pose.position.z=np.float64(20)
-            # if circle_number==1:
-            #     if circle_failed[0]==0 and average_conf>=conf_thresh:
-            #         target_pub.publish(final_pos__)
-            #         permission_pub.publish(1)
-            #         result_pub.publish(str(num_list_only_num))   
-            #         # print(1)
-            #     else:
-            #         # print(2)
-            #         permission_pub.publish(0)
-            #         result_pub.publish("circle fail")
-            # else:
-            #     # print(3)
-            #     target_pub.publish(final_pos__)
-            #     permission_pub.publish(1)
-            # # for i in range(100):
-            #     result_pub.publish(str(num_list_only_num))  
+            final_pos__.pose.position.z=np.float64(40)
+
+            if circle_number==1:
+                if commonCheckedFlag or (circle_failed[0]==0 and average_conf>=conf_thresh):
+                    target_pub.publish(final_pos__)
+                    permission_pub.publish(1)
+                    result_pub.publish(str(num_list_only_num))   
+                    # print(1)
+                else:
+                    # print(2)
+                    permission_pub.publish(0)
+                    result_pub.publish("circle fail")
+            else:
+                # print(3)
+                target_pub.publish(final_pos__)
+                permission_pub.publish(1)
+            # for i in range(100):
+                result_pub.publish(str(num_list_only_num))  
+
             savepath=os.path.join(path,"output.txt")
             # with open(savepath, 'a') as file: 
             # with open(f'/home/amov/Desktop/well{folder_name}/output.txt', 'a') as file:
