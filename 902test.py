@@ -115,8 +115,10 @@ def main():
     parser.add_argument('--numOfCircle',type=int,default=2)
     parser.add_argument('--numOfProcs',type=int,default=6)
     parser.add_argument('--checkpoint',type=int,default=2)
+    parser.add_argument('--union',type=int)
     arg=parser.parse_args()
-    
+
+    union=arg.union
     checkpoint=arg.checkpoint
     mode=arg.mode
     # retinex=arg.retinex
@@ -805,23 +807,24 @@ def main():
             final_pos__.pose.position.x=np.float64(real_final_pos[0])
             final_pos__.pose.position.y=np.float64(real_final_pos[1])
             final_pos__.pose.position.z=np.float64(40)
-
-            if circle_number==1:
-                if commonCheckedFlag or (circle_failed[0]==0 and average_conf>=conf_thresh):
+            if union:
+                # if circle_number==1:
+                #     if commonCheckedFlag or (circle_failed[0]==0 and average_conf>=conf_thresh):
+                #         target_pub.publish(final_pos__)
+                #         permission_pub.publish(1)
+                #         result_pub.publish(str(num_list_only_num))   
+                #         # print(1)
+                #     else:
+                #         # print(2)
+                #         permission_pub.publish(0)
+                #         result_pub.publish("circle fail")
+                # else:
+                if circle_number==2:
+                    # print(3)
                     target_pub.publish(final_pos__)
                     permission_pub.publish(1)
-                    result_pub.publish(str(num_list_only_num))   
-                    # print(1)
-                else:
-                    # print(2)
-                    permission_pub.publish(0)
-                    result_pub.publish("circle fail")
-            else:
-                # print(3)
-                target_pub.publish(final_pos__)
-                permission_pub.publish(1)
-            # for i in range(100):
-                result_pub.publish(str(num_list_only_num))  
+                # for i in range(100):
+                    result_pub.publish(str(num_list_only_num))  
 
             savepath=os.path.join(path,"output.txt")
             # with open(savepath, 'a') as file: 

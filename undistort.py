@@ -11,16 +11,18 @@ dist = np.array([-0.5018,0.2920,-0.0034,0.0010,-0.2113])
 nmtx, _ = cv2.getOptimalNewCameraMatrix(mtx, dist, (fw,fh), alpha=1)
 center=[1234.0,689.0]
 center=np.array(center,dtype=np.float32)
-log=r"E:\2024-2025summer\917download\log_shi\31thefirst"
+log=r"E:\2025-2026fall\cuadc\34"
 # path=r"E:\2024-2025summer\917download\log_shi\32\2clearframes"
-path=os.path.join(log,"2clearframes")
+path=os.path.join(log,"frames")
 # newpath=r"E:\2024-2025summer\917download\log_shi\32\2clearframes_un"
-newpath=os.path.join(log,"2clearframes_un")
+newpath=os.path.join(log,"frames_un")
 os.makedirs(newpath,exist_ok=True)
 
 files=[]
+pics=[]
 # with open(os.path.join(log,"log.txt"),'w') as file:
 for i in os.listdir(path):
+    pics.append(i[:-4])
     frame=cv2.imread(os.path.join(path,i))
     cv2.circle(frame,(1234,689),5,(0,0,255),5)
     frame=cv2.undistort(frame,mtx,dist,None,nmtx)
@@ -45,7 +47,11 @@ for i in files:
             filename=line.strip().split()[2].split('/')[-1].split('_')[0]
             print(filename)
             yaw=line.strip().split()[6]
-            if filename not in processed:
+            if filename not in processed and filename in pics:
+                try:
+                    frame=cv2.imread(os.path.join(newpath,f"{int(filename)}.jpg"))
+                except Exception:
+                    continue
                 # center=np.array(point,dtype=np.float32)
                 print(center)
                 point=cv2.undistortPoints(np.resize(center,(1,1,2)),mtx,dist,P=nmtx)
@@ -64,8 +70,8 @@ for i in files:
                 point_y[1]-=3000*np.cos(float(yaw)-3.14159265/2)
                 point_oppo_y[0]-=3000*np.sin(float(yaw)-3.14159265/2)
                 point_oppo_y[1]+=3000*np.cos(float(yaw)-3.14159265/2)
+                processed.append(filename)
                 # print(point_new)
-                frame=cv2.imread(os.path.join(newpath,f"{int(filename):04d}.jpg"))
                 # print(point.flatten().astype(np.uint8))
                 # print(point_new.astype(np.uint8))
                 cv2.line(frame,point.flatten().astype(np.int32),point_new.astype(np.int32),(0,0,255),thickness=5)
@@ -73,6 +79,6 @@ for i in files:
                 cv2.line(frame,point.flatten().astype(np.int32),point_oppo_x.astype(np.int32),(255,255,255),thickness=5,)
                 cv2.line(frame,point.flatten().astype(np.int32),point_oppo_y.astype(np.int32),(255,255,255),thickness=5,)
                 
-                cv2.imwrite(os.path.join(newpath,f"{int(filename):04d}.jpg"),frame)
+                cv2.imwrite(os.path.join(newpath,f"{int(filename)}.jpg"),frame)
                 processed.append(filename)
                 # cv2.resize(interpolation=cv2.INTER_LANCZOS4)
