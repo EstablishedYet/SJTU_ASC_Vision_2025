@@ -1,7 +1,7 @@
 import cv2
 import os
 import numpy as np
-path=r"F:\17\2clearframes"
+path=r"F:\1004\54\2clearframes"
 
 for i in os.listdir(path):
     frame=cv2.imread(os.path.join(path,i))
@@ -10,6 +10,6 @@ for i in os.listdir(path):
     h,s,v=cv2.split(nframe)
     sum_v=np.sum(v)/(v.shape[0]*v.shape[1])
     sum_g=np.sum(grayframe)/(v.shape[0]*v.shape[1])
-    print(f"{i} {sum_v} {sum_g}")
-    cv2.imshow('img',frame)
-    cv2.waitKey(0)
+    print(f"{i} {sum_g}")
+    # cv2.imshow('img',frame)
+    # cv2.waitKey(0)
