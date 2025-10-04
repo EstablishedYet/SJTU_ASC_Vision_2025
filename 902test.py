@@ -172,7 +172,7 @@ def main():
 
     dist = np.array([0.08100940,-0.04600870,-0.00947654,-0.00119316,-0.12417034])
     nmtx, _ = cv2.getOptimalNewCameraMatrix(mtx, dist, (fw,fh), alpha=1)
-    exposures=[1,4,8,15,30,50,90]
+    exposures=[1,4,8,15,30,50,90,200,500,1000,2000]
 
     if mode=="number":
         MODELCLASSIFY = modelclassify_number
@@ -351,7 +351,6 @@ def main():
 
     rospy.init_node("vision_node")
     rate = rospy.Rate(30)
-
     result_pub = rospy.Publisher("final_result", String, queue_size = 1,latch=True)
     target_pub = rospy.Publisher("final_pos",PoseStamped, queue_size = 1,latch=True)
     permission_pub=rospy.Publisher("permission",Float64,queue_size=1)
@@ -487,6 +486,8 @@ def main():
             os.makedirs(clearframesPath,exist_ok=True)
             # out = cv2.VideoWriter(f"/home/amov/Desktop/well{folder_name}/output{circle_number}.mp4", fourcc, 30, (1920, 1080))
             # file=open(os.path.join(path,"odom.txt"),'a')
+            cap.read()
+            cap.read()
             with open(os.path.join(path,"odom.txt"),'a') as file:
                 while True:                                
                     # if cap.isOpened():
@@ -807,24 +808,25 @@ def main():
             final_pos__.pose.position.x=np.float64(real_final_pos[0])
             final_pos__.pose.position.y=np.float64(real_final_pos[1])
             final_pos__.pose.position.z=np.float64(40)
-            if union:
-                # if circle_number==1:
-                #     if commonCheckedFlag or (circle_failed[0]==0 and average_conf>=conf_thresh):
-                #         target_pub.publish(final_pos__)
-                #         permission_pub.publish(1)
-                #         result_pub.publish(str(num_list_only_num))   
-                #         # print(1)
-                #     else:
-                #         # print(2)
-                #         permission_pub.publish(0)
-                #         result_pub.publish("circle fail")
-                # else:
-                if circle_number==2:
-                    # print(3)
-                    target_pub.publish(final_pos__)
-                    permission_pub.publish(1)
-                # for i in range(100):
-                    result_pub.publish(str(num_list_only_num))  
+            # if union:
+            #     # if circle_number==1:
+            #     #     if commonCheckedFlag or (circle_failed[0]==0 and average_conf>=conf_thresh):
+            #     #         target_pub.publish(final_pos__)
+            #     #         permission_pub.publish(1)
+            #     #         result_pub.publish(str(num_list_only_num))   
+            #     #         # print(1)
+            #     #     else:
+            #     #         # print(2)
+            #     #         permission_pub.publish(0)
+            #     #         result_pub.publish("circle fail")
+            #     # else:
+
+            #     if circle_number==2:
+            #         # print(3)
+            #         target_pub.publish(final_pos__)
+            #         permission_pub.publish(1)
+            #     # for i in range(100):
+            #         result_pub.publish(str(num_list_only_num))  
 
             savepath=os.path.join(path,"output.txt")
             # with open(savepath, 'a') as file: 
@@ -837,6 +839,13 @@ def main():
             file.close()
             print(time.time()-t0)
         if circle_number == 2:
+            if union:
+                time0=time.time()
+                while(time.time()-time0<=480):
+                    target_pub.publish(final_pos__)
+                    permission_pub.publish(1)
+                    result_pub.publish(str(num_list_only_num)) 
+                    time.sleep(1)
             console.close()
             break
 
