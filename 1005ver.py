@@ -1,4 +1,4 @@
-import math
+import math,gc
 import time
 from collections import Counter
 import cv2
@@ -24,7 +24,7 @@ import multiprocessing
 import sys
 import subprocess
 import shutil
-import serial
+import serial,traceback
 
 # def getHSV(h,s,v):
 #     return np.array([int(h/2),int(s/100*255),int(v/100*255)])
@@ -111,9 +111,9 @@ def main():
     parser.add_argument('--c1end',type=int,default=8)
     parser.add_argument('--c2start',type=int,default=13)
     parser.add_argument('--c2end',type=int,default=14)
-    parser.add_argument('--numOfFrame',type=int,default=50)
+    parser.add_argument('--numOfFrame',type=int,default=40)
     parser.add_argument('--numOfCircle',type=int,default=2)
-    parser.add_argument('--numOfProcs',type=int,default=6)
+    parser.add_argument('--numOfProcs',type=int,default=8)
     parser.add_argument('--checkpoint',type=int,default=2)
     parser.add_argument('--union',type=int)
     arg=parser.parse_args()
@@ -478,7 +478,7 @@ def main():
             os.makedirs(os.path.join(path,f'{circle_number}crop'),exist_ok=True)
             os.makedirs(os.path.join(path,f'{circle_number}crop1'),exist_ok=True)
             os.makedirs(os.path.join(path,f'{circle_number}crop2'),exist_ok=True)
-
+            os.makedirs(os.path.join(path,f'{circle_number}raw'),exist_ok=True)
             # os.makedirs(os.path.join(path,f'{circle_number}masks'),exist_ok=True)
             # os.makedirs(os.path.join(path,f'{circle_number}masks_'),exist_ok=True)
             # os.makedirs(os.path.join(path,f'{circle_number}origin'),exist_ok=True)
@@ -590,7 +590,7 @@ def main():
                 divided_results[rank][1].append(cupresult)
 
             with multiprocessing.Pool(processes=numOfProcs) as pool:
-                cls_sources=pool.map(cls_predict,divided_results)
+                cls_sources=pool.map(cls_predict_warp,divided_results)
             file=open(os.path.join(path,'output.txt'), 'a')
             file.write(str(time.localtime())+'\n')
             if mode=="number":
@@ -697,9 +697,11 @@ def main():
                     file.write("Classify num is:" + str(num) +' '+str(result.probs.top1conf)+' '+str(name)+"\n")
                         # alldata=alldataList[mapofclear[i+bias]]e.write("Classify num is:" + str(num) +' '+str(results_classify1[0].probs.top1conf)+' '+str(results_classify2[0].probs.top1conf) +"\n")
                         # alldata=alldataList[mapofclear[i+bias]]
-
+            # if circle_number==2:
+            print(wp)
+        if circle_number == 2:
             common_trusted_num_list=most_common_numbers(trusted_num_list)
-            zero_poses=[np.zeros(3),np.zeros(3),np.zeros(3)]
+            zero_poses=[[],[],[],[],[],[]]
             commonCheckedFlag=False
             if common_checked(common_trusted_num_list,len(num_list)):
                 commonCheckedFlag=True
@@ -710,8 +712,8 @@ def main():
                 length=3
                 middles=np.zeros(length)
                 files={common_trusted_num_list[0]:open(os.path.join(path,f'{common_trusted_num_list[0]}.txt'), 'a'),
-                       common_trusted_num_list[1]:open(os.path.join(path,f'{common_trusted_num_list[1]}.txt'), 'a'),
-                       common_trusted_num_list[2]:open(os.path.join(path,f'{common_trusted_num_list[2]}.txt'), 'a')}
+                    common_trusted_num_list[1]:open(os.path.join(path,f'{common_trusted_num_list[1]}.txt'), 'a'),
+                    common_trusted_num_list[2]:open(os.path.join(path,f'{common_trusted_num_list[2]}.txt'), 'a')}
                 for k in range(object_sum):  # 识别到数字的有效
                     savedflag=False
                     for rank in range(length):
@@ -722,7 +724,8 @@ def main():
                                                             speed=trusted_dataList[k].get_speed())
                             # with open(os.path.join(path,f'{common_trusted_num_list[rank]}.txt'), 'a') as file1:
                             files[common_trusted_num_list[rank]].write(str(cur_pos[0]) + " " + str(cur_pos[1]) +' '+ str(trusted_dataList[k].filename)+' '+str(trusted_dataList[k].get_pos()[0])+' '+str(trusted_dataList[k].get_pos()[1])+' '+str(trusted_dataList[k].get_pos()[2])+' '+str(trusted_dataList[k].yaw)+' '+str(trusted_dataList[k].cropTensorList)+"\n")
-                            zero_poses[rank] += cur_pos
+                            zero_poses[2*rank].append(cur_pos[0])
+                            zero_poses[2*rank+1].append(cur_pos[1])
                             middles[rank] += 1
                             savedflag=True
                             break
@@ -733,10 +736,12 @@ def main():
                                 speed=trusted_dataList[k].get_speed())
                             # with open(os.path.join(path,f'{common_trusted_num_list[rank]}.txt'), 'a') as file1:
                             f.write(str(cur_pos[0]) + " " + str(cur_pos[1]) + ' '+str(trusted_dataList[k].filename)+' '+str(trusted_dataList[k].get_pos()[0])+' '+str(trusted_dataList[k].get_pos()[1])+' '+str(trusted_dataList[k].get_pos()[2])+' '+str(trusted_dataList[k].yaw)+' '+str(trusted_dataList[k].cropTensorList)+"\n")
-
+                for i,_ in enumerate(zero_poses):
+                    zero_poses[i]=sorted(zero_poses[i])
+                    zero_poses[i]=zero_poses[i][int(len(zero_poses[i])/2)]
                 final_poses=[np.zeros(3),np.zeros(3),np.zeros(3)]
                 for i in range(length):
-                    final_poses[i]=[zero_poses[i][0] / middles[i], zero_poses[i][1] / middles[i], zero_poses[i][2] / middles[i]]
+                    final_poses[i]=[zero_poses[2*i], zero_poses[2*i+1], 0]
                     if ideal_num==common_trusted_num_list[i]:
                         real_final_pos = final_poses[i]
 
@@ -755,13 +760,13 @@ def main():
                         if unit[0]==num_list_noconf[index][0]:
                             num_list_conf[index]+=unit[1]
                             break
-                average_conf=0
+                # average_conf=0
                 num_list_only_num=[]
                 for i in range(length):
                     num_list_only_num.append(num_list_noconf[i][0])
                     num_list_conf[i]/=num_list_noconf[i][1]
-                    average_conf+=num_list_conf[i]
-                average_conf/=length
+                    # average_conf+=num_list_conf[i]
+                # average_conf/=length
                 if length>=3:
                     ideal_num = get_ideal(num_list_only_num)
                 else:
@@ -783,7 +788,8 @@ def main():
                                                             speed=dataList[k].get_speed())
                             # with open(os.path.join(path,f'{num_list_noconf[rank][0]}.txt'), 'a') as file1:
                             files[num_list_only_num[rank]].write(str(cur_pos[0]) + " " + str(cur_pos[1]) + ' '+str(dataList[k].filename)+' '+str(dataList[k].get_pos()[0])+' '+str(dataList[k].get_pos()[1])+' '+str(dataList[k].get_pos()[2])+' '+str(dataList[k].yaw)+' '+str(dataList[k].cropTensorList)+"\n")
-                            zero_poses[rank] += cur_pos
+                            zero_poses[2*rank].append(cur_pos[0])
+                            zero_poses[2*rank+1].append(cur_pos[1])
                             middles[rank] += 1
                             savedflag=True
                             break
@@ -794,10 +800,15 @@ def main():
                                 speed=dataList[k].get_speed())
                             # with open(os.path.join(path,f'{common_trusted_num_list[rank]}.txt'), 'a') as file1:
                             f.write(str(cur_pos[0]) + " " + str(cur_pos[1]) + ' '+str(dataList[k].filename)+' '+str(dataList[k].get_pos()[0])+' '+str(dataList[k].get_pos()[1])+' '+str(dataList[k].get_pos()[2])+' '+str(dataList[k].yaw)+' '+str(dataList[k].cropTensorList)+"\n")
-                
+                for i,_ in enumerate(zero_poses):
+                    zero_poses[i]=sorted(zero_poses[i])
+                    if len(zero_poses[i])>0:
+                        zero_poses[i]=zero_poses[i][int(len(zero_poses[i])/2)]
+                    else:
+                        zero_poses[i]=0
                 final_poses=[np.zeros(3),np.zeros(3),np.zeros(3)]
                 for i in range(length):
-                    final_poses[i]=[zero_poses[i][0] / middles[i], zero_poses[i][1] / middles[i], zero_poses[i][2] / middles[i]]
+                    final_poses[i]=[zero_poses[2*i], zero_poses[2*i+1], 0]
                     if ideal_num==num_list_noconf[i][0]:
                         real_final_pos = final_poses[i]
                 for i in files.values():
@@ -810,7 +821,7 @@ def main():
             final_pos__=PoseStamped()
             final_pos__.pose.position.x=np.float64(real_final_pos[0])
             final_pos__.pose.position.y=np.float64(real_final_pos[1])
-            final_pos__.pose.position.z=np.float64(40)
+            final_pos__.pose.position.z=np.float64(30)
             # if union:
             #     # if circle_number==1:
             #     #     if commonCheckedFlag or (circle_failed[0]==0 and average_conf>=conf_thresh):
@@ -841,7 +852,7 @@ def main():
             file.write("ideal_num is: " + str(ideal_num) + "\n")
             file.close()
             print(time.time()-t0)
-        if circle_number == 2:
+
             if union:
                 time0=time.time()
                 while(time.time()-time0<=480):
@@ -898,27 +909,7 @@ def cropTarget(rawImage, cropTensorList, width, height,mtx,dist,nmtx):
     return cv2.warpPerspective(rawImage, affineMatrix, (width, height),flags=cv2.INTER_LANCZOS4),cropTensorList
 
 def auto_rotate(img,rank,rotate_num,number,path,circle_number):
-    # if retinex==0:
-    #     if needRetinex: #img-retinexed  mask-unreti
-    #         maskimg=img
-    #         img=cm.MSRCP(img)
-    #         maskimg=cv2.cvtColor(maskimg,cv2.COLOR_BGR2HSV)
-    #         # img=cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
-    #     else: #img-unreti mask-unreti
-    #         img=cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
-    #         maskimg=img
-    # else:
-    #     if needRetinex: #img-reti mask-reti
-    #         img=cm.MSRCP(img)
-    #         # img=cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
-    #         maskimg=img
-    #     else: #img-unreti mask-unreti
-    #         img=cv2.cvtColor(img,cv2.COLOR_BGR2HSV)
-    #         maskimg=img
-    
-    # # img=cm.laplacian(img)
-    # h,w=maskimg.shape[:2]
-    # rawmask=getMask(maskimg)
+    cv2.imwrite(os.path.join(path,f'{circle_number}raw',f"{number}_{rank}_{rotate_num}.jpg"),img)
     premaskup=cv2.imread(r"/home/amov/sjtu_asc_v2_ws-main/src/mission_offboard/script/masks/maskup.jpg",cv2.IMREAD_GRAYSCALE)
     premaskdown=cv2.imread(r"/home/amov/sjtu_asc_v2_ws-main/src/mission_offboard/script/masks/maskdown.jpg",cv2.IMREAD_GRAYSCALE)
     # maskup=np.bitwise_and(img,premaskup)
@@ -927,11 +918,11 @@ def auto_rotate(img,rank,rotate_num,number,path,circle_number):
     ROIdown=img[premaskdown==255]
     sortedUp=np.sort(ROIup)
     sortedDown=np.sort(ROIdown)
-    up_30=sortedUp[int(sortedUp.size*0.3)]
-    down_30=sortedDown[int(sortedDown.size*0.3)]
+    up_60=sortedUp[int(sortedUp.size*0.60)]
+    down_60=sortedDown[int(sortedDown.size*0.60)]
     # varup=np.var(ROIup)
     # vardown=np.var(ROIdown)
-    if up_30>=down_30:
+    if up_60>=down_60:
         img=cv2.rotate(img,cv2.ROTATE_180)
     h,w=img.shape[:2]
     img=img[h//3+2*h//3//8:h-2*h//3//8,w//8:w-w//8] #h//3+2*h//3//8
@@ -943,341 +934,6 @@ def auto_rotate(img,rank,rotate_num,number,path,circle_number):
     img=np.clip(img.astype(np.float64)-1.5*img_,0,255).astype(np.uint8)
     savepath1=os.path.join(path,f'{circle_number}crop',f"{number}_{rank}_{rotate_num}.jpg")
     cv2.imwrite(savepath1,img)
-    # if np.sum(maskdown) > np.sum(maskup):  # 检测下面的部分
-    #     img = cv2.rotate(img, cv2.ROTATE_180)
-    #     # maskimg=cv2.rotate(maskimg,cv2.ROTATE_180)
-    #     if retinex==0 and needRetinex:
-    #         maskimg=cv2.rotate(maskimg,cv2.ROTATE_180)
-    # if retinex==0 and needRetinex:
-    #     img=img[int(h/3):]
-    #     img=cv2.resize(img,(640,640),interpolation=cv2.INTER_CUBIC)
-    #     # img=cv2.copyMakeBorder(img,30,30,30,30,cv2.BORDER_CONSTANT,value=(0,90,250))
-    #     maskimg=maskimg[int(h/3):]
-    #     maskimg=cv2.resize(maskimg,(640,640),interpolation=cv2.INTER_CUBIC)
-    #     # maskimg=cv2.copyMakeBorder(maskimg,30,30,30,30,cv2.BORDER_CONSTANT,value=(0,90,250))
-    # else:
-    #     img=img[int(h/3):]
-    #     img=cv2.resize(img,(640,640),interpolation=cv2.INTER_CUBIC)
-    #     # img=cv2.copyMakeBorder(img,30,30,30,30,cv2.BORDER_CONSTANT,value=(0,90,250))
-    #     maskimg=img
-    # return img,maskimg
-
-# def apply_num_rec_package(img,maskimg,rank,rotate_num,number,path,mode,circle_number):
-#     # if mode=="number_new":
-#         # if img is not None:
-#     mask = getMask(maskimg)
-#     kernel = np.ones((13, 13), np.uint8)
-    
-#     # savepath1=os.path.join(path,f'{circle_number}masks',f'{rank}_{rotate_num}.jpg')
-#     # cv2.imwrite(savepath1, mask)
-#     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
-#     # # mask=cv2.GaussianBlur(mask,(11,11),100)
-#     # # mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-#     # # mask=cv2.GaussianBlur(mask,(11,11),100)
-#     # mask=cv2.dilate(mask,(9,9))
-#     # kernel=np.ones((5,5),np.uint8)
-#     # mask=cv2.morphologyEx(mask,cv2.MORPH_OPEN,kernel)
-#     # kernel=np.ones((9,9),np.uint8)
-#     # mask=cv2.morphologyEx(mask,cv2.MORPH_OPEN,kernel)
-#     # cv2.imshow('b',mask)
-#     # cv2.waitKey(0)
-#     mask[0:80,:]=255
-#     mask[560:640,:]=255
-#     mask[:,0:80]=255
-#     mask[:,560:640]=255
-#     hstart=80
-#     hend=560
-#     width=480
-#     for i in range(480):
-#         if np.sum(mask[i+80,80:560])<0.05*width*255:
-#             mask[i+80,80:560]=255
-#             hstart+=1
-#         else:
-#             break
-#     for i in range(480):
-#         if np.sum(mask[559-i,80:560])<0.05*width*255:
-#             mask[559-i,80:560]=255
-#             hend-=1
-#         else:
-#             break
-#     height=hend-hstart
-#     wstart=80
-#     wend=560
-#     for i in range(480):
-#         if np.sum(mask[hstart:hend,i+80])<0.05*height*255:
-#             mask[hstart:hend,i+80]=255
-#             wstart+=1
-#         else:
-#             break
-#     for i in range(480):
-#         if np.sum(mask[hstart:hend,559-i])<0.05*height*255:
-#             mask[hstart:hend,559-i]=255
-#             wend-=1
-#         else:
-#             break
-#     kernels=[9,15,25]
-#     for kernel in kernels:
-#         k=cv2.getStructuringElement(cv2.MORPH_RECT,(kernel,kernel))
-#         mask=cv2.morphologyEx(mask,cv2.MORPH_OPEN,k)
-#     # _, mask = cv2.threshold(mask, 170, 255, cv2.THRESH_BINARY)
-
-#     # savepath2=os.path.join(path,f'{circle_number}masks_',f'{rank}_{rotate_num}.jpg')
-#     # cv2.imwrite(savepath2, mask)
-#     if mode=="number_new":
-#         contours, _ = cv2.findContours(mask, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-#         areas= []
-#         quad = []
-#         # print(contours)
-#         for cnt in contours:
-#             epsilon = 0.05* cv2.arcLength(cnt, True)
-#             approx = cv2.approxPolyDP(cnt, epsilon, True)
-#             hull=cv2.convexHull(approx)
-#             epsilon=0.05*cv2.arcLength(hull,True)
-#             approx=cv2.approxPolyDP(hull,epsilon,True)
-#             if len(approx) == 4 :
-#                 area = cv2.contourArea(approx)
-#                 if cm.legal_region(area,approx):  
-#                     areas.append(area)
-#                     quad.append(approx)
-#             elif len(approx)>4:
-#                 area = cv2.contourArea(approx)
-#                 if cm.legal_region(area,approx):
-#                     rect=cv2.minAreaRect(cnt)
-#                     box=cv2.boxPoints(rect)
-#                     areas.append(area)
-#                     approx=box.reshape((-1,2))
-#                     quad.append(approx)
-#         areas=np.array(areas)
-#         quad=np.array(quad)
-#         no_crop_flag=False
-#         if areas.size !=0:
-#             # print(file_name,":")
-#             # print(best_quad)
-#             if areas.size==1:
-#                 points=quad[0].reshape(-1,2)
-#                 sum_xy=points.sum(axis=1)
-#                 diff_xy=points[:,0]-points[:,1]
-#                 corners=np.zeros((4,2),dtype=np.float32)
-#                 corners[0]=points[np.argmin(sum_xy)]
-#                 corners[1]=points[np.argmax(diff_xy)]
-#                 corners[2]=points[np.argmax(sum_xy)]
-#                 corners[3]=points[np.argmin(diff_xy)]
-#                 corners[0]-=30
-#                 corners[2]+=30
-#                 corners[1][0]+=30
-#                 corners[1][1]-=30
-#                 corners[3][0]-=30
-#                 corners[3][1]+=30
-#                 pts_src=np.float32([
-#                     corners[0],
-#                     corners[1],
-#                     corners[2],
-#                     corners[3]
-#                 ])
-#                 # print(name,pts_src)
-#                 pts_dest=np.float32([
-#                         [0,0],
-#                         [639,0],
-#                         [639,639],
-#                         [0,639],
-#                     ]
-#                 )
-#                 M=cv2.getPerspectiveTransform(pts_src,pts_dest)
-#                 img=cv2.warpPerspective(img,M,(640,640),borderValue=(255,255,255),flags=cv2.INTER_CUBIC)
-#             else:
-#                 min1_val = np.min(areas)
-#                 min1_idx = np.argmin(areas)
-
-#                 # 把该值临时设置为无穷大
-#                 arr_temp = areas.copy()
-#                 arr_temp[min1_idx] = np.inf
-
-#                 # 再找第二小的
-#                 min2_val = np.min(arr_temp)
-#                 min2_idx = np.argmin(arr_temp)
-#                 points1=quad[min1_idx].reshape(-1,2)
-#                 points2=quad[min2_idx].reshape(-1,2)
-#                 points=np.concatenate((points1,points2),axis=0)
-#                 # print(name,points)
-#                 sum_xy=points.sum(axis=1)
-#                 diff_xy=points[:,0]-points[:,1]
-#                 corners=np.zeros((4,2),dtype=np.float32)
-#                 corners[0]=points[np.argmin(sum_xy)]
-#                 corners[1]=points[np.argmax(diff_xy)]
-#                 corners[2]=points[np.argmax(sum_xy)]
-#                 corners[3]=points[np.argmin(diff_xy)]
-#                 corners[0]-=30
-#                 corners[2]+=30
-#                 corners[1][0]+=30
-#                 corners[1][1]-=30
-#                 corners[3][0]-=30
-#                 corners[3][1]+=30
-#                 pts_src=np.float32([
-#                     corners[0],
-#                     corners[1],
-#                     corners[2],
-#                     corners[3]
-#                 ])
-#                 # print(name,pts_src)
-#                 pts_dest=np.float32([
-#                         [0,0],
-#                         [639,0],
-#                         [639,639],
-#                         [0,639],
-#                     ]
-#                 )
-#                 M=cv2.getPerspectiveTransform(pts_src,pts_dest)
-#                 img=cv2.warpPerspective(img,M,(640,640),borderValue=(255,255,255),flags=cv2.INTER_CUBIC)
-#                 # print(f"{name}:divi")
-#         else:
-#             # print(name,"no")
-#             # print(contours)
-#             img=img[80:560,80:560]
-#             no_crop_flag=True
-#             if hstart-80<=120:
-#                 newhstart=hstart-80
-#             else:
-#                 newhstart=0
-#             if hend-80>=360:
-#                 newhend=hend-80
-#             else:
-#                 newhend=480
-#             if wstart-80<=120:
-#                 newwstart=wstart-80
-#             else:
-#                 newwstart=0
-#             if wend-80>=360:
-#                 newwend=wend-80
-#             else:
-#                 newwend=480
-            
-
-#         img=cv2.cvtColor(img,cv2.COLOR_HSV2BGR)
-
-#         # img=cm.biFilter(img)
-#         # img=cm.CLAHE_and_wiener(img)
-#         # img=biFilter(img)
-#         img=cm.laplacian(img)
-#         # img=biFilter(img)
-#         # img=opening(img)
-#         # img=cm.opening(img,15)
-#         # img=cm.opening(img,21)
-#         # img=cm.opening(img,27),
-#         # img=cm.closing(img,15)
-#         # img=cm.biFilter(img)
-#         # return img,no_crop_flag,newhstart,newhend,newwstart,newwend
-
-#         # flag=False
-        
-#         # if mode=="number_new":
-
-#         h,w=img.shape[:2]
-#         img1=img[:,:int(6*w/11)]
-#         img2=img[:,int(5*w/11):]
-#         if no_crop_flag:
-#             img1=img1[newhstart:newhend,newwstart:]
-#             img2=img2[newhstart:newhend,:newwend-int(5*w/11)]
-#         # img1=img1[:,newwstart:]
-#         # img2=img2[:,:newwend]
-#         img1=cv2.resize(img1,(640,640),interpolation=cv2.INTER_CUBIC)
-#         img2=cv2.resize(img2,(640,640),interpolation=cv2.INTER_CUBIC)
-#         savepath1=os.path.join(path,f'{circle_number}crop1',f"{number}_{rank}_{rotate_num}.jpg")
-#         savepath2=os.path.join(path,f'{circle_number}crop2',f"{number}_{rank}_{rotate_num}.jpg")
-#         # os.makedirs(savepath1,exist_ok=True)
-#         # os.makedirs(savepath2,exist_ok=True)
-#         cv2.imwrite(savepath1,img1)
-#         cv2.imwrite(savepath2,img2)
-#         # results_classify1 = modelClassify.predict(
-#         #     source=img1,
-#         #     imgsz=640,
-#         #     device='0',
-#         #     save=False,
-#         #     workers=4
-#         # )
-#         # results_classify2=modelClassify.predict(
-#         #     source=img2,
-#         #     imgsz=640,
-#         #     device='0',
-#         #     save=False,
-#         #     workers=4
-#         # )
-#         # num=10*int(results_classify1[0].probs.top1)+int(results_classify2[0].probs.top1)
-
-#         # if results_classify1[0].probs.top1conf>=0.7 and results_classify2[0].probs.top1conf>=0.7:
-#         #     trusted_num_list.append(num)
-#         #     flag=True
-#         # num_and_prob=(10*int(results_classify1[0].probs.top1)+int(results_classify2[0].probs.top1),results_classify1[0].probs.top1conf*results_classify2[0].probs.top1conf)
-#         # print("Classify num is:" + str(num))
-#         # savepath=os.path.join(path,'output.txt')
-#         # with open(savepath, 'a') as file:
-#         #     file.write("Classify num is:" + str(num) +' '+str(results_classify1[0].probs.top1conf)+' '+str(results_classify2[0].probs.top1conf) +"\n")
-#         # num_list.append(num_and_prob)
-#         # return num,flag
-#     # else:
-#     #     if no_crop_flag:
-#     #         img=img[newhstart:newhend,newwstart:newwend]
-#     #         img=cv2.resize(img,(640,640),interpolation=cv2.INTER_CUBIC)
-#     #     savepath1=os.path.join(path,f'{circle_number}crop',f"{number}_{rank}_{rotate_num}.jpg")
-#     #     cv2.imwrite(savepath1,img)
-#         # results_classify = modelClassify.predict(
-#         #     source=img,
-#         #     imgsz=640,
-#         #     device='0',
-#         #     save=False,
-#         #     workers=4
-#         # )
-#         # if mode=="number_old":
-#         #     num=int(results_classify[0].probs.top1)
-#         # else:
-#         #     num=pattern_dic[int(results_classify[0].probs.top1)]
-#         # if results_classify[0].probs.top1conf>=0.7:
-#         #     trusted_num_list.append(num)
-#         #     flag=True
-#         # num_and_prob=(num,results_classify[0].probs.top1conf)
-#         # print("Classify num is:" + str(num))
-#         # savepath=os.path.join(path,'output.txt')
-#         # with open(savepath, 'a') as file:
-#         #     file.write("Classify num is:" + str(num) + str(results_classify[0].probs.top1conf)+"\n")
-#         # num_list.append(num_and_prob)
-#         # return num,flag
-#     else:
-#         img=img[80:560,80:560]
-#         if hstart-80<=120:
-#             newhstart=hstart-80
-#         else:
-#             newhstart=0
-#         if hend-80>=360:
-#             newhend=hend-80
-#         else:
-#             newhend=480
-#         if wstart-80<=120:
-#             newwstart=wstart-80
-#         else:
-#             newwstart=0
-#         if wend-80>=360:
-#             newwend=wend-80
-#         else:
-#             newwend=480
-
-#         img=cv2.cvtColor(img,cv2.COLOR_HSV2BGR)
-
-#         # img=cm.biFilter(img)
-#         # img=cm.CLAHE_and_wiener(img)
-#         # img=biFilter(img)
-#         img=cm.laplacian(img)
-#         # img=biFilter(img)
-#         # img=opening(img)
-#         # img=cm.opening(img,15)
-#         # img=cm.opening(img,21)
-#         # img=cm.opening(img,27),
-#         # img=cm.closing(img,15)
-#         # img=cm.biFilter(img)
-#         img=img[newhstart:newhend,newwstart:newwend]
-#         img=cv2.resize(img,(640,640),interpolation=cv2.INTER_CUBIC)
-#         savepath1=os.path.join(path,f'{circle_number}crop',f"{number}_{rank}_{rotate_num}.jpg")
-#         cv2.imwrite(savepath1,img)
-
-
 
 def cls_predict(arg):
     rank=arg[0]
@@ -1319,10 +975,16 @@ def cls_predict(arg):
                 # if trusted_flag:
                 #     trusted_dataList.append(imgdata)
                 # cv2.imshow("img_num" + str(j), img_num)
-     
+    del arg
+    gc.collect()
     return tensors
 
-
+def cls_predict_warp(arg):
+    try:
+        return cls_predict(arg)
+    except Exception:
+        traceback.print_exc()
+        return None
 
 if __name__ == "__main__":
     multiprocessing.set_start_method('spawn',force=True)
